@@ -34,12 +34,12 @@ const navItems: NavItem[] = [
     icon: Search,
     description: "Investigate agent traces",
   },
-  {
-    title: "Alerts",
-    href: "/alerts",
-    icon: AlertTriangle,
-    description: "Security alerts and notifications",
-  },
+  // {
+  //   title: "Alerts",
+  //   href: "/alerts",
+  //   icon: AlertTriangle,
+  //   description: "Security alerts and notifications",
+  // },
 ];
 
 /**

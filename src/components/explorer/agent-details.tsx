@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { ActionBadge } from "@/components/ui/execution-badges";
 import { Agent, SecurityResult, Execution } from "@/types";
 import { cn } from "@/lib/utils";
+import { api } from "@/lib/api";
+import { useState } from "react";
 import {
   CheckCircle,
   XCircle,
@@ -18,6 +20,7 @@ import {
   MessageSquare,
   Check,
   X,
+  Loader2,
 } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
 
@@ -27,6 +30,9 @@ import { formatDistanceToNow, format } from "date-fns";
 interface SecurityResultDisplayProps {
   result: SecurityResult;
   className?: string;
+  executionId?: string;
+  agentName?: string;
+  isPromptSecurity?: boolean;
 }
 
 /**
@@ -35,6 +41,9 @@ interface SecurityResultDisplayProps {
 function SecurityResultDisplay({
   result,
   className,
+  executionId,
+  agentName,
+  isPromptSecurity = false,
 }: SecurityResultDisplayProps) {
   const layers = [
     { key: "L1", label: "L1 Firewall", result: result.L1 },
@@ -43,14 +52,75 @@ function SecurityResultDisplay({
     { key: "L3", label: "L3 Compliance", result: result.L3 },
   ];
 
+  const [loadingStates, setLoadingStates] = useState<Record<string, boolean>>(
+    {}
+  );
+  const [successStates, setSuccessStates] = useState<Record<string, boolean>>(
+    {}
+  );
+  const [errorStates, setErrorStates] = useState<Record<string, string>>({});
+
+  const handleSecurityOverride = async (
+    layerKey: string,
+    action: "accept" | "reject"
+  ) => {
+    if (!executionId) {
+      console.error("No execution ID available for security override");
+      return;
+    }
+
+    const stateKey = `${layerKey}-${action}`;
+    setLoadingStates((prev) => ({ ...prev, [stateKey]: true }));
+    setErrorStates((prev) => ({ ...prev, [stateKey]: "" }));
+
+    try {
+      const overrideData = {
+        layer: layerKey as "L1" | "L2" | "L3" | "llama_guard",
+        agent_name: isPromptSecurity ? "Prompt" : agentName || "Unknown",
+        action,
+        reason: `User ${action}ed the flagged security result for ${layerKey}`,
+        user_id: "current-user", // TODO: Replace with actual user ID from auth context
+      };
+
+      const response = await api.executions.submitSecurityOverride(
+        executionId,
+        overrideData
+      );
+
+      if (response.success) {
+        setSuccessStates((prev) => ({ ...prev, [stateKey]: true }));
+        console.log(
+          `Successfully ${action}ed ${layerKey} security override:`,
+          response.data
+        );
+
+        // Reset success state after 3 seconds
+        setTimeout(() => {
+          setSuccessStates((prev) => ({ ...prev, [stateKey]: false }));
+        }, 3000);
+      } else {
+        throw new Error(
+          response.error || `Failed to ${action} security override`
+        );
+      }
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : `Failed to ${action} security override`;
+      setErrorStates((prev) => ({ ...prev, [stateKey]: errorMessage }));
+      console.error(`Error ${action}ing security override:`, error);
+    } finally {
+      setLoadingStates((prev) => ({ ...prev, [stateKey]: false }));
+    }
+  };
+
   const handleAccept = (layerKey: string) => {
-    console.log(`Accepting flagged result for ${layerKey}`);
-    // TODO: Implement accept logic
+    handleSecurityOverride(layerKey, "accept");
   };
 
   const handleReject = (layerKey: string) => {
-    console.log(`Rejecting flagged result for ${layerKey}`);
-    // TODO: Implement reject logic
+    handleSecurityOverride(layerKey, "reject");
   };
 
   const getLlamaGuardColors = () => {
@@ -139,21 +209,63 @@ function SecurityResultDisplay({
                       size="sm"
                       variant="outline"
                       onClick={() => handleAccept(layer.key)}
-                      className="h-6 px-2 text-xs bg-green-50 hover:bg-green-100 text-green-700 border-green-200 dark:bg-green-950 dark:hover:bg-green-900 dark:text-green-300 dark:border-green-800"
+                      disabled={
+                        loadingStates[`${layer.key}-accept`] ||
+                        loadingStates[`${layer.key}-reject`]
+                      }
+                      className={cn(
+                        "h-6 px-2 text-xs",
+                        successStates[`${layer.key}-accept`]
+                          ? "bg-green-200 text-green-800 border-green-300 dark:bg-green-800 dark:text-green-200"
+                          : "bg-green-50 hover:bg-green-100 text-green-700 border-green-200 dark:bg-green-950 dark:hover:bg-green-900 dark:text-green-300 dark:border-green-800"
+                      )}
                     >
-                      <Check className="h-3 w-3 mr-1" />
-                      Accept
+                      {loadingStates[`${layer.key}-accept`] ? (
+                        <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                      ) : successStates[`${layer.key}-accept`] ? (
+                        <CheckCircle className="h-3 w-3 mr-1" />
+                      ) : (
+                        <Check className="h-3 w-3 mr-1" />
+                      )}
+                      {successStates[`${layer.key}-accept`]
+                        ? "Accepted"
+                        : "Accept"}
                     </Button>
                     <Button
                       size="sm"
                       variant="outline"
                       onClick={() => handleReject(layer.key)}
-                      className="h-6 px-2 text-xs bg-red-50 hover:bg-red-100 text-red-700 border-red-200 dark:bg-red-950 dark:hover:bg-red-900 dark:text-red-300 dark:border-red-800"
+                      disabled={
+                        loadingStates[`${layer.key}-accept`] ||
+                        loadingStates[`${layer.key}-reject`]
+                      }
+                      className={cn(
+                        "h-6 px-2 text-xs",
+                        successStates[`${layer.key}-reject`]
+                          ? "bg-red-200 text-red-800 border-red-300 dark:bg-red-800 dark:text-red-200"
+                          : "bg-red-50 hover:bg-red-100 text-red-700 border-red-200 dark:bg-red-950 dark:hover:bg-red-900 dark:text-red-300 dark:border-red-800"
+                      )}
                     >
-                      <X className="h-3 w-3 mr-1" />
-                      Reject
+                      {loadingStates[`${layer.key}-reject`] ? (
+                        <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                      ) : successStates[`${layer.key}-reject`] ? (
+                        <XCircle className="h-3 w-3 mr-1" />
+                      ) : (
+                        <X className="h-3 w-3 mr-1" />
+                      )}
+                      {successStates[`${layer.key}-reject`]
+                        ? "Rejected"
+                        : "Reject"}
                     </Button>
                   </div>
+                  {/* Error feedback */}
+                  {(errorStates[`${layer.key}-accept`] ||
+                    errorStates[`${layer.key}-reject`]) && (
+                    <div className="mt-2 text-xs text-red-600 dark:text-red-400">
+                      {errorStates[`${layer.key}-accept`] ||
+                        errorStates[`${layer.key}-reject`]}
+                    </div>
+                  )}
                 </>
               )}
             </div>
@@ -270,7 +382,11 @@ export function AgentDetails({
               <h4 className="font-medium text-sm text-muted-foreground mb-3">
                 Prompt Security Check
               </h4>
-              <SecurityResultDisplay result={execution.prompt_security} />
+              <SecurityResultDisplay
+                result={execution.prompt_security}
+                executionId={execution.execution_id}
+                isPromptSecurity={true}
+              />
             </div>
 
             {/* Instructions */}
@@ -334,7 +450,11 @@ export function AgentDetails({
               <h4 className="font-medium text-sm text-muted-foreground mb-3">
                 Security Analysis
               </h4>
-              <SecurityResultDisplay result={selectedAgent.sentinel_result} />
+              <SecurityResultDisplay
+                result={selectedAgent.sentinel_result}
+                executionId={execution?.execution_id}
+                agentName={selectedAgent.agent_name}
+              />
             </div>
 
             {/* Execution timestamp */}

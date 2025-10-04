@@ -380,6 +380,37 @@ export const executionsApi = {
   },
 
   /**
+   * Submit security override for execution
+   * @param executionId - Unique execution identifier
+   * @param overrideData - Override request data
+   * @returns Promise with override response
+   */
+  submitSecurityOverride: async (
+    executionId: string,
+    overrideData: {
+      layer: "L1" | "L2" | "L3" | "llama_guard";
+      agent_name: string;
+      action: "accept" | "reject";
+      reason: string;
+      user_id: string;
+    }
+  ): Promise<ApiResponse<{
+    status: string;
+    action: string;
+    execution_id: string;
+  }>> => {
+    console.log('🔐 Submitting security override for:', executionId, overrideData);
+    return apiRequest<{
+      status: string;
+      action: string;
+      execution_id: string;
+    }>(`/api/executions/${executionId}/security/override`, {
+      method: 'POST',
+      body: JSON.stringify(overrideData)
+    });
+  },
+
+  /**
    * Get dashboard statistics
    * @returns Promise with dashboard stats
    */
