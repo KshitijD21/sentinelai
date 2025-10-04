@@ -14,6 +14,21 @@ export type RiskLevel = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
 export type TraceStatus = 'COMPLETED' | 'BLOCKED' | 'PENDING' | 'PROCESSING' | 'FAILED';
 
 /**
+ * Execution status from the Flask API
+ */
+export type ExecutionStatus = 'PROCESSING' | 'COMPLETED' | 'BLOCKED' | 'REJECTED';
+
+/**
+ * Overall action decision
+ */
+export type OverallAction = 'allowed' | 'blocked';
+
+/**
+ * Blocked by levels
+ */
+export type BlockedBy = 'L1' | 'L2' | 'L3' | 'llama_guard';
+
+/**
  * Security firewall results
  */
 export type FirewallResult = 'SAFE' | 'BLOCKED' | 'SANITIZED';
@@ -211,6 +226,82 @@ export interface SecurityAlert {
   updated_at: string;
   /** User assigned to handle the alert */
   assigned_to?: string;
+}
+
+/**
+ * Security check result for each layer (L1, L2, L3, llama_guard)
+ */
+export interface SecurityResult {
+  /** L1 firewall check result */
+  L1: {
+    flagged: boolean;
+    reason: string;
+    category: string;
+  };
+  /** Llama Guard check result */
+  llama_guard: {
+    flagged: boolean;
+    reason: string;
+    category: string;
+  };
+  /** L2 guardrail check result */
+  L2: {
+    flagged: boolean;
+    reason: string;
+    category: string;
+  };
+  /** L3 compliance check result */
+  L3: {
+    flagged: boolean;
+    reason: string;
+    category: string;
+  };
+}
+
+/**
+ * Agent execution information
+ */
+export interface Agent {
+  /** Name of the agent */
+  agent_name: string;
+  /** Task description */
+  task: string;
+  /** Agent output data */
+  output: Record<string, any>;
+  /** Execution timestamp */
+  timestamp: string;
+  /** Security check results for this agent */
+  sentinel_result: SecurityResult;
+  /** Action decision (allowed/blocked) */
+  action: OverallAction;
+}
+
+/**
+ * Complete execution information from Flask API
+ */
+export interface Execution {
+  /** MongoDB document ID */
+  _id: string;
+  /** Unique execution identifier */
+  execution_id: string;
+  /** Original user prompt */
+  user_prompt: string;
+  /** Current execution status */
+  status: ExecutionStatus;
+  /** Overall risk assessment */
+  overall_risk: RiskLevel;
+  /** Final action decision */
+  overall_action: OverallAction;
+  /** Which layer blocked the execution (if blocked) */
+  blocked_by?: BlockedBy;
+  /** Creation timestamp */
+  created_at: string;
+  /** Last update timestamp */
+  updated_at: string;
+  /** List of agents involved in execution */
+  agents: Agent[];
+  /** Prompt-level security check results */
+  prompt_security: SecurityResult;
 }
 
 /**

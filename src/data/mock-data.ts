@@ -4,7 +4,8 @@ import {
   DashboardMetrics,
   SecurityAlert,
   RiskLevel,
-  TraceStatus
+  TraceStatus,
+  Execution
 } from '@/types';
 
 /**
@@ -411,4 +412,132 @@ export const riskLevelOptions: { value: RiskLevel, label: string }[] = [
   { value: 'MEDIUM', label: 'Medium Risk' },
   { value: 'HIGH', label: 'High Risk' },
   { value: 'CRITICAL', label: 'Critical Risk' }
+];
+
+/**
+ * Mock execution data for testing the new explorer
+ */
+export const mockExecutions: Execution[] = [
+  {
+    _id: "672ff123456789abcdef0001",
+    execution_id: "exec-abc123",
+    user_prompt: "Write a Python function to calculate fibonacci numbers efficiently using memoization",
+    status: "COMPLETED" as const,
+    overall_risk: "LOW" as const,
+    overall_action: "allowed" as const,
+    created_at: "2025-10-04T15:30:00Z",
+    updated_at: "2025-10-04T15:32:30Z",
+    agents: [
+      {
+        agent_name: "planner",
+        task: "Create implementation plan for fibonacci function",
+        output: {
+          plan: "1. Use memoization for optimization\n2. Handle edge cases (n=0, n=1)\n3. Return iterative solution for better performance",
+          approach: "dynamic_programming"
+        },
+        timestamp: "2025-10-04T15:30:15Z",
+        sentinel_result: {
+          L1: { flagged: false, reason: "Safe code planning request", category: "code_generation" },
+          llama_guard: { flagged: false, reason: "No harmful content detected", category: "safe" },
+          L2: { flagged: false, reason: "Planning task is low risk", category: "development" },
+          L3: { flagged: false, reason: "Compliant with coding standards", category: "approved" }
+        },
+        action: "allowed" as const
+      },
+      {
+        agent_name: "coder",
+        task: "Generate optimized fibonacci function code",
+        output: {
+          code: "def fibonacci(n, memo={}):\n    if n in memo:\n        return memo[n]\n    if n <= 1:\n        return n\n    memo[n] = fibonacci(n-1, memo) + fibonacci(n-2, memo)\n    return memo[n]",
+          language: "python",
+          complexity: "O(n)"
+        },
+        timestamp: "2025-10-04T15:31:45Z",
+        sentinel_result: {
+          L1: { flagged: false, reason: "Safe Python code", category: "code_generation" },
+          llama_guard: { flagged: false, reason: "No security risks in code", category: "safe" },
+          L2: { flagged: false, reason: "Code follows best practices", category: "development" },
+          L3: { flagged: false, reason: "No compliance issues", category: "approved" }
+        },
+        action: "allowed" as const
+      }
+    ],
+    prompt_security: {
+      L1: { flagged: false, reason: "Legitimate coding request", category: "educational" },
+      llama_guard: { flagged: false, reason: "Safe programming query", category: "safe" },
+      L2: { flagged: false, reason: "Standard development request", category: "development" },
+      L3: { flagged: false, reason: "Compliant request", category: "approved" }
+    }
+  },
+  {
+    _id: "672ff123456789abcdef0002",
+    execution_id: "exec-def456",
+    user_prompt: "How can I bypass the authentication system in our web application for testing purposes?",
+    status: "BLOCKED" as const,
+    overall_risk: "HIGH" as const,
+    overall_action: "blocked" as const,
+    blocked_by: "L2" as const,
+    created_at: "2025-10-04T14:15:00Z",
+    updated_at: "2025-10-04T14:15:30Z",
+    agents: [
+      {
+        agent_name: "security_analyzer",
+        task: "Analyze request for security implications",
+        output: {
+          analysis: "Request involves authentication bypass - potential security risk",
+          threat_level: "high",
+          recommendation: "blocked"
+        },
+        timestamp: "2025-10-04T14:15:20Z",
+        sentinel_result: {
+          L1: { flagged: false, reason: "Request pattern seems legitimate for testing", category: "testing" },
+          llama_guard: { flagged: true, reason: "Authentication bypass request detected", category: "security_risk" },
+          L2: { flagged: true, reason: "Potential security vulnerability exploitation", category: "security_breach" },
+          L3: { flagged: false, reason: "Could be legitimate testing request", category: "testing" }
+        },
+        action: "blocked" as const
+      }
+    ],
+    prompt_security: {
+      L1: { flagged: false, reason: "Could be legitimate testing question", category: "testing" },
+      llama_guard: { flagged: true, reason: "Authentication bypass language detected", category: "security_risk" },
+      L2: { flagged: true, reason: "Potential security threat", category: "security_breach" },
+      L3: { flagged: false, reason: "Might be for legitimate testing", category: "testing" }
+    }
+  },
+  {
+    _id: "672ff123456789abcdef0003",
+    execution_id: "exec-ghi789",
+    user_prompt: "Create a data visualization dashboard for our sales metrics using React and Chart.js",
+    status: "PROCESSING" as const,
+    overall_risk: "LOW" as const,
+    overall_action: "allowed" as const,
+    created_at: "2025-10-04T16:00:00Z",
+    updated_at: "2025-10-04T16:02:00Z",
+    agents: [
+      {
+        agent_name: "ui_designer",
+        task: "Design dashboard layout and components",
+        output: {
+          wireframe: "Dashboard with header, sidebar, and main chart area",
+          components: ["Header", "Sidebar", "ChartContainer", "MetricsCards"],
+          design_system: "Material Design"
+        },
+        timestamp: "2025-10-04T16:01:00Z",
+        sentinel_result: {
+          L1: { flagged: false, reason: "UI design request is safe", category: "design" },
+          llama_guard: { flagged: false, reason: "No harmful content", category: "safe" },
+          L2: { flagged: false, reason: "Standard development task", category: "development" },
+          L3: { flagged: false, reason: "Approved development work", category: "approved" }
+        },
+        action: "allowed" as const
+      }
+    ],
+    prompt_security: {
+      L1: { flagged: false, reason: "Standard development request", category: "development" },
+      llama_guard: { flagged: false, reason: "Safe technical request", category: "safe" },
+      L2: { flagged: false, reason: "Legitimate development task", category: "development" },
+      L3: { flagged: false, reason: "Approved project work", category: "approved" }
+    }
+  }
 ];

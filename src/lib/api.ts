@@ -4,13 +4,15 @@ import {
   DashboardMetrics,
   SecurityAlert,
   FilterOptions,
-  ApiResponse
+  ApiResponse,
+  Execution
 } from '@/types';
 import {
   mockTraceList,
   mockTraceDetails,
   mockDashboardMetrics,
-  mockSecurityAlerts
+  mockSecurityAlerts,
+  mockExecutions
 } from '@/data/mock-data';
 
 /**
@@ -22,7 +24,7 @@ import {
 /**
  * Base API configuration
  */
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:9000';
 const DEFAULT_TIMEOUT = 10000; // 10 seconds
 
 /**
@@ -33,62 +35,67 @@ async function apiRequest<T>(
   options: RequestInit = {}
 ): Promise<ApiResponse<T>> {
   try {
-    console.log(`🔄 API Request: ${endpoint}`);
+    console.log(`🔄 API Request: ${API_BASE_URL}${endpoint}`);
 
-    // Simulate network delay for development
-    await new Promise(resolve => setTimeout(resolve, 500));
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        ...options.headers,
+      },
+      mode: 'cors',
+    });
 
-    // In a real implementation, this would be:
-    // const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    //   ...options,
-    //   headers: {
-    //     'Content-Type': 'application/json',
-    //     ...options.headers,
-    //   },
-    // });
-    //
-    // if (!response.ok) {
-    //   throw new Error(`API Error: ${response.status} ${response.statusText}`);
-    // }
-    //
-    // const data = await response.json();
-    // return { data, success: true, status: response.status };
+    if (!response.ok) {
+      throw new Error(`API Error: ${response.status} ${response.statusText}`);
+    }
 
-    // For now, return mock data based on endpoint
+    const data = await response.json();
+    return { data, success: true, status: response.status };
+
+  } catch (error) {
+    console.error(`❌ API Error for ${endpoint}:`, error);
+
+    // Fallback to mock data in case of network error
     let mockData: any;
 
     switch (endpoint) {
-      case '/traces':
-        mockData = mockTraceList;
+      case '/api/executions':
+        mockData = mockExecutions;
         break;
-      case '/dashboard/metrics':
+      case '/api/dashboard/stats':
         mockData = mockDashboardMetrics;
         break;
       case '/alerts':
         mockData = mockSecurityAlerts;
         break;
       default:
-        if (endpoint.startsWith('/traces/')) {
-          const traceId = endpoint.split('/')[2];
-          mockData = mockTraceDetails[traceId] || null;
+        if (endpoint.startsWith('/api/executions/')) {
+          const executionId = endpoint.split('/')[3];
+          mockData = mockExecutions.find(exec => exec.execution_id === executionId) || null;
+        } else if (endpoint.includes('/search?q=')) {
+          const query = endpoint.split('q=')[1]?.toLowerCase() || '';
+          mockData = mockExecutions.filter(exec =>
+            exec.user_prompt.toLowerCase().includes(decodeURIComponent(query)) ||
+            exec.agents.some(agent =>
+              agent.agent_name.toLowerCase().includes(decodeURIComponent(query)) ||
+              agent.task.toLowerCase().includes(decodeURIComponent(query))
+            )
+          );
         } else {
-          throw new Error(`Unknown endpoint: ${endpoint}`);
+          mockData = null;
         }
     }
 
+    // Return mock data as successful response, but include warning
+    console.warn(`Using mock data for ${endpoint} due to API error:`, error);
+
     return {
       data: mockData,
-      success: true,
-      status: 200
-    };
-
-  } catch (error) {
-    console.error(`❌ API Error for ${endpoint}:`, error);
-
-    return {
       error: error instanceof Error ? error.message : 'Unknown error',
-      success: false,
-      status: 500
+      success: mockData !== null, // Success if we have mock data
+      status: mockData !== null ? 200 : 500
     };
   }
 }
@@ -320,6 +327,67 @@ export const systemApi = {
 };
 
 /**
+ * Executions API endpoints
+ */
+export const executionsApi = {
+  /**
+   * Get list of executions
+   * @returns Promise with executions list
+   */
+  getExecutions: async (): Promise<ApiResponse<Execution[]>> => {
+    console.log('🔍 Fetching executions');
+    return apiRequest<Execution[]>('/api/executions');
+  },
+
+  /**
+   * Get detailed information for a specific execution
+   * @param executionId - Unique execution identifier
+   * @returns Promise with execution details
+   */
+  getExecutionDetails: async (executionId: string): Promise<ApiResponse<Execution>> => {
+    console.log('📊 Fetching execution details for:', executionId);
+    return apiRequest<Execution>(`/api/executions/${executionId}`);
+  },
+
+  /**
+   * Search executions by query
+   * @param query - Search query string
+   * @returns Promise with matching executions
+   */
+  searchExecutions: async (query: string): Promise<ApiResponse<Execution[]>> => {
+    console.log('🔍 Searching executions with query:', query);
+    const encodedQuery = encodeURIComponent(query);
+    return apiRequest<Execution[]>(`/api/executions/search?q=${encodedQuery}`);
+  },
+
+  /**
+   * Filter executions with advanced criteria
+   * @param filters - Filter criteria object
+   * @returns Promise with filtered executions
+   */
+  filterExecutions: async (filters: {
+    status?: string;
+    risk?: string;
+    timeRange?: string;
+  }): Promise<ApiResponse<Execution[]>> => {
+    console.log('🔍 Filtering executions with:', filters);
+    return apiRequest<Execution[]>('/api/executions/filter', {
+      method: 'POST',
+      body: JSON.stringify(filters)
+    });
+  },
+
+  /**
+   * Get dashboard statistics
+   * @returns Promise with dashboard stats
+   */
+  getDashboardStats: async (): Promise<ApiResponse<DashboardMetrics>> => {
+    console.log('📊 Fetching dashboard stats');
+    return apiRequest<DashboardMetrics>('/api/dashboard/stats');
+  }
+};
+
+/**
  * Main API client export
  */
 export const api = {
@@ -327,7 +395,8 @@ export const api = {
   dashboard: dashboardApi,
   alerts: alertsApi,
   agents: agentsApi,
-  system: systemApi
+  system: systemApi,
+  executions: executionsApi
 };
 
 /**

@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Search, RefreshCw, Filter } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Search, RefreshCw, Filter, Users, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -11,31 +11,68 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useExplorerStore } from "@/store";
-import {
-  mockTraceList,
-  agentTypes,
-  timeRangeOptions,
-  statusOptions,
-  riskLevelOptions,
-} from "@/data/mock-data";
-import { TraceStatus, RiskLevel } from "@/types";
-
+import { ExecutionStatus, RiskLevel, Execution, Agent } from "@/types";
+import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
-import { TraceList } from "./trace-list";
-import { TraceDetails } from "./trace-details";
+import { ExecutionList } from "./execution-list";
+import { AgentDetails } from "./agent-details";
+
+/**
+ * Time range options for filtering
+ */
+const timeRangeOptions = [
+  { label: "Last Hour", value: "1h" },
+  { label: "Last 24 Hours", value: "24h" },
+  { label: "Last 7 Days", value: "7d" },
+  { label: "Last 30 Days", value: "30d" },
+  { label: "All Time", value: "all" },
+];
+
+/**
+ * Status options for filtering
+ */
+const statusOptions: { label: string; value: ExecutionStatus | "all" }[] = [
+  { label: "All Statuses", value: "all" },
+  { label: "Completed", value: "COMPLETED" },
+  { label: "Processing", value: "PROCESSING" },
+  { label: "Blocked", value: "BLOCKED" },
+  { label: "Rejected", value: "REJECTED" },
+];
+
+/**
+ * Risk level options for filtering
+ */
+const riskOptions: { label: string; value: RiskLevel | "all" }[] = [
+  { label: "All Risk Levels", value: "all" },
+  { label: "Low", value: "LOW" },
+  { label: "Medium", value: "MEDIUM" },
+  { label: "High", value: "HIGH" },
+  { label: "Critical", value: "CRITICAL" },
+];
+
+/**
+ * Filter state interface
+ */
+interface FilterState {
+  search: string;
+  timeRange: string;
+  status: ExecutionStatus | "all";
+  risk: RiskLevel | "all";
+}
 
 /**
  * Filter header component with search and filter controls
  */
-function FilterHeader() {
-  const { filters, setFilters, resetFilters } = useExplorerStore();
+function FilterHeader({
+  filters,
+  setFilters,
+  onRefresh,
+}: {
+  filters: FilterState;
+  setFilters: (filters: Partial<FilterState>) => void;
+  onRefresh: () => void;
+}) {
   const [showMoreFilters, setShowMoreFilters] = useState(false);
-
-  const handleRefresh = () => {
-    console.log("🔄 Refreshing trace data...");
-    // In a real app, this would trigger React Query refetch
-  };
 
   return (
     <div className="space-y-4 p-6 border-b border-border">
@@ -45,8 +82,8 @@ function FilterHeader() {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search traces, agents, or tasks..."
-            value={filters.search || ""}
+            placeholder="Search executions, agents, or tasks..."
+            value={filters.search}
             onChange={(e) => setFilters({ search: e.target.value })}
             className="pl-10"
           />
@@ -54,7 +91,7 @@ function FilterHeader() {
 
         {/* Quick filter dropdowns */}
         <Select
-          value={filters.timeRange || "24h"}
+          value={filters.timeRange}
           onValueChange={(value) => setFilters({ timeRange: value })}
         >
           <SelectTrigger className="w-40">
@@ -70,7 +107,7 @@ function FilterHeader() {
         </Select>
 
         {/* Actions */}
-        <Button variant="outline" size="sm" onClick={handleRefresh}>
+        <Button variant="outline" size="sm" onClick={onRefresh}>
           <RefreshCw className="h-4 w-4 mr-1" />
           Refresh
         </Button>
@@ -89,37 +126,15 @@ function FilterHeader() {
       {showMoreFilters && (
         <div className="flex items-center space-x-4 pt-4 border-t border-border">
           <Select
-            value={filters.agent || ""}
+            value={filters.status}
             onValueChange={(value) =>
-              setFilters({ agent: value === "all" ? "" : value })
+              setFilters({ status: value as ExecutionStatus | "all" })
             }
           >
             <SelectTrigger className="w-48">
-              <SelectValue placeholder="All Agents" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Agents</SelectItem>
-              {agentTypes.map((agent) => (
-                <SelectItem key={agent} value={agent}>
-                  {agent}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select
-            value={filters.status || ""}
-            onValueChange={(value) =>
-              setFilters({
-                status: value === "all" ? undefined : (value as TraceStatus),
-              })
-            }
-          >
-            <SelectTrigger className="w-40">
               <SelectValue placeholder="All Statuses" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Statuses</SelectItem>
               {statusOptions.map((option) => (
                 <SelectItem key={option.value} value={option.value}>
                   {option.label}
@@ -129,19 +144,16 @@ function FilterHeader() {
           </Select>
 
           <Select
-            value={filters.risk || ""}
+            value={filters.risk}
             onValueChange={(value) =>
-              setFilters({
-                risk: value === "all" ? undefined : (value as RiskLevel),
-              })
+              setFilters({ risk: value as RiskLevel | "all" })
             }
           >
-            <SelectTrigger className="w-40">
+            <SelectTrigger className="w-48">
               <SelectValue placeholder="All Risk Levels" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Risk Levels</SelectItem>
-              {riskLevelOptions.map((option) => (
+              {riskOptions.map((option) => (
                 <SelectItem key={option.value} value={option.value}>
                   {option.label}
                 </SelectItem>
@@ -149,7 +161,18 @@ function FilterHeader() {
             </SelectContent>
           </Select>
 
-          <Button variant="ghost" size="sm" onClick={resetFilters}>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() =>
+              setFilters({
+                search: "",
+                status: "all",
+                risk: "all",
+                timeRange: "24h",
+              })
+            }
+          >
             Clear All
           </Button>
         </div>
@@ -159,62 +182,223 @@ function FilterHeader() {
 }
 
 /**
- * Main explorer page component with split-panel interface
- * Left panel: Trace list with filtering
- * Right panel: Selected trace details
+ * Main explorer page component - using original layout with execution data
  */
 export function ExplorerPage() {
-  const { selectedTraceId, isDetailPanelOpen } = useExplorerStore();
+  // State management
+  const [executions, setExecutions] = useState<Execution[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedExecutionId, setSelectedExecutionId] = useState<string | null>(
+    null
+  );
+  const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
+  const [filters, setFilters] = useState<FilterState>({
+    search: "",
+    timeRange: "24h",
+    status: "all",
+    risk: "all",
+  });
+
+  // Get selected execution object
+  const selectedExecution =
+    executions.find((exec) => exec.execution_id === selectedExecutionId) ||
+    null;
+
+  // Fetch executions from API
+  const fetchExecutions = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const response = await api.executions.getExecutions();
+
+      if (response.success && response.data) {
+        setExecutions(response.data);
+      } else {
+        setError(response.error || "Failed to fetch executions");
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unknown error occurred");
+      console.error("Error fetching executions:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Filter executions based on current filters
+  const filteredExecutions = executions.filter((execution) => {
+    // Search filter
+    if (filters.search) {
+      const searchQuery = filters.search.toLowerCase();
+      const matchesPrompt = execution.user_prompt
+        .toLowerCase()
+        .includes(searchQuery);
+      const matchesAgent = execution.agents.some(
+        (agent) =>
+          agent.agent_name.toLowerCase().includes(searchQuery) ||
+          agent.task.toLowerCase().includes(searchQuery)
+      );
+      if (!matchesPrompt && !matchesAgent) return false;
+    }
+
+    // Status filter
+    if (filters.status !== "all" && execution.status !== filters.status) {
+      return false;
+    }
+
+    // Risk filter
+    if (filters.risk !== "all" && execution.overall_risk !== filters.risk) {
+      return false;
+    }
+
+    return true;
+  });
+
+  // Handle execution selection
+  const handleExecutionSelect = (executionId: string) => {
+    setSelectedExecutionId(executionId);
+    setSelectedAgent(null); // Reset agent selection when changing execution
+  };
+
+  // Handle agent selection from timeline
+  const handleAgentSelect = (agent: Agent) => {
+    setSelectedAgent(agent);
+  };
+
+  // Update filters
+  const updateFilters = (newFilters: Partial<FilterState>) => {
+    setFilters((prev) => ({ ...prev, ...newFilters }));
+  };
+
+  // Initial load
+  useEffect(() => {
+    fetchExecutions();
+  }, []);
 
   return (
-    <div className="flex flex-col h-screen">
-      {/* Header */}
-      <div className="flex-shrink-0 px-6 py-4 border-b border-border">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">Trace Explorer</h1>
-            <p className="text-muted-foreground">
-              Investigate agent executions and security analysis
-            </p>
+    <div className="flex flex-col h-full">
+      {/* Page Header */}
+      <div className="border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight">
+                Execution Explorer
+              </h1>
+              <p className="text-muted-foreground">
+                Monitor and analyze AI agent executions in real-time
+              </p>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Button size="sm" variant="outline">
+                Export
+              </Button>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Filter Controls */}
-      <FilterHeader />
+      <FilterHeader
+        filters={filters}
+        setFilters={updateFilters}
+        onRefresh={fetchExecutions}
+      />
 
       {/* Main Split Panel */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Left Panel - Trace List */}
-        <div
-          className={cn(
-            "w-2/5 border-r border-border flex flex-col",
-            isDetailPanelOpen && "lg:w-2/5"
+        {/* Left Panel - Execution List + Agent Timeline */}
+        <div className="w-2/5 border-r border-border flex flex-col">
+          {/* Execution List Section */}
+          <div className="flex-1 flex flex-col min-h-0">
+            <div className="p-4 border-b border-border">
+              <h2 className="text-lg font-semibold flex items-center space-x-2">
+                <MessageSquare className="h-5 w-5" />
+                <span>EXECUTIONS</span>
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                {filteredExecutions.length} executions found
+              </p>
+            </div>
+            <div className="flex-1 overflow-hidden">
+              <ExecutionList
+                executions={filteredExecutions}
+                selectedExecutionId={selectedExecutionId}
+                onExecutionSelect={handleExecutionSelect}
+                loading={loading}
+              />
+            </div>
+          </div>
+
+          {/* Agent Timeline Section */}
+          {selectedExecution && (
+            <div className="flex-1 flex flex-col min-h-0 border-t border-border">
+              <div className="p-4 border-b border-border">
+                <h2 className="text-lg font-semibold flex items-center space-x-2">
+                  <Users className="h-5 w-5" />
+                  <span>AGENTS</span>
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  {selectedExecution.agents.length} agents in execution
+                </p>
+              </div>
+              <div className="flex-1 overflow-auto p-4">
+                <div className="space-y-3">
+                  {selectedExecution.agents.map((agent, index) => (
+                    <div
+                      key={`${agent.agent_name}-${index}`}
+                      className={cn(
+                        "p-3 rounded-lg border cursor-pointer transition-all",
+                        selectedAgent === agent
+                          ? "border-primary bg-primary/5"
+                          : "border-border hover:border-primary/30 hover:bg-muted/50"
+                      )}
+                      onClick={() => handleAgentSelect(agent)}
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="font-medium text-sm">
+                          {agent.agent_name}
+                        </span>
+                        <span
+                          className={cn(
+                            "text-xs px-2 py-1 rounded",
+                            agent.action === "allowed"
+                              ? "bg-green-100 text-green-700"
+                              : "bg-red-100 text-red-700"
+                          )}
+                        >
+                          {agent.action}
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {agent.task}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
           )}
-        >
-          <div className="p-4 border-b border-border">
-            <h2 className="text-lg font-semibold">TRACE LIST</h2>
-            <p className="text-sm text-muted-foreground">
-              {mockTraceList.length} traces found
-            </p>
-          </div>
-          <div className="flex-1 overflow-hidden">
-            <TraceList />
-          </div>
         </div>
 
-        {/* Right Panel - Trace Details */}
+        {/* Right Panel - Agent Details */}
         <div className="flex-1 flex flex-col">
           <div className="p-4 border-b border-border">
-            <h2 className="text-lg font-semibold">EXECUTION DETAILS</h2>
+            <h2 className="text-lg font-semibold">AGENT DETAILS</h2>
             <p className="text-sm text-muted-foreground">
-              {selectedTraceId
-                ? "Detailed trace analysis"
-                : "Select a trace to view details"}
+              {selectedAgent
+                ? `${selectedAgent.agent_name} execution details`
+                : selectedExecution
+                ? "Select an agent to view details"
+                : "Select an execution to view agent details"}
             </p>
           </div>
           <div className="flex-1 overflow-hidden">
-            <TraceDetails />
+            <AgentDetails
+              execution={selectedExecution}
+              selectedAgent={selectedAgent}
+            />
           </div>
         </div>
       </div>
