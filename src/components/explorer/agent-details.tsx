@@ -2,6 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { ActionBadge } from "@/components/ui/execution-badges";
 import { Agent, SecurityResult, Execution } from "@/types";
 import { cn } from "@/lib/utils";
@@ -10,12 +11,13 @@ import {
   XCircle,
   AlertTriangle,
   Clock,
-  User,
   Shield,
   Code,
   Brain,
   Bot,
   MessageSquare,
+  Check,
+  X,
 } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
 
@@ -36,41 +38,128 @@ function SecurityResultDisplay({
 }: SecurityResultDisplayProps) {
   const layers = [
     { key: "L1", label: "L1 Firewall", result: result.L1 },
+    { key: "llama_guard", label: "Llama Guard", result: result.llama_guard },
     { key: "L2", label: "L2 Guardrails", result: result.L2 },
     { key: "L3", label: "L3 Compliance", result: result.L3 },
-    { key: "llama_guard", label: "Llama Guard", result: result.llama_guard },
   ];
+
+  const handleAccept = (layerKey: string) => {
+    console.log(`Accepting flagged result for ${layerKey}`);
+    // TODO: Implement accept logic
+  };
+
+  const handleReject = (layerKey: string) => {
+    console.log(`Rejecting flagged result for ${layerKey}`);
+    // TODO: Implement reject logic
+  };
+
+  const getLlamaGuardColors = () => {
+    return {
+      background:
+        "bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30",
+      border: "border-blue-200 dark:border-blue-800",
+      text: "text-blue-700 dark:text-blue-400",
+      icon: "text-blue-600 dark:text-blue-400",
+    };
+  };
 
   return (
     <div className={cn("space-y-3", className)}>
-      {layers.map((layer) => (
-        <div
-          key={layer.key}
-          className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
-        >
-          <span className="font-medium text-sm">{layer.label}</span>
-          <div className="flex items-center space-x-2">
-            {layer.result.flagged ? (
-              <XCircle className="h-4 w-4 text-red-500" />
-            ) : (
-              <CheckCircle className="h-4 w-4 text-green-500" />
+      {layers.map((layer) => {
+        const isLlamaGuard = layer.key === "llama_guard";
+        const metaColors = isLlamaGuard ? getLlamaGuardColors() : null;
+
+        return (
+          <div
+            key={layer.key}
+            className={cn(
+              "flex items-center justify-between p-3 rounded-lg border",
+              isLlamaGuard && metaColors
+                ? `${metaColors.background} ${metaColors.border}`
+                : "bg-muted/50 border-transparent"
             )}
+          >
             <span
               className={cn(
-                "text-sm font-medium",
-                layer.result.flagged ? "text-red-600" : "text-green-600"
+                "font-medium text-sm",
+                isLlamaGuard && metaColors ? metaColors.text : ""
               )}
             >
-              {layer.result.flagged ? "Flagged" : "Safe"}
+              {layer.label}
             </span>
-            {layer.result.flagged && (
-              <Badge variant="destructive" className="text-xs">
-                {layer.result.category}
-              </Badge>
-            )}
+            <div className="flex items-center space-x-2">
+              {layer.result.flagged ? (
+                <XCircle
+                  className={cn(
+                    "h-4 w-4",
+                    isLlamaGuard && metaColors
+                      ? metaColors.icon
+                      : "text-red-500"
+                  )}
+                />
+              ) : (
+                <CheckCircle
+                  className={cn(
+                    "h-4 w-4",
+                    isLlamaGuard && metaColors
+                      ? metaColors.icon
+                      : "text-green-500"
+                  )}
+                />
+              )}
+              <span
+                className={cn(
+                  "text-sm font-medium",
+                  layer.result.flagged
+                    ? isLlamaGuard && metaColors
+                      ? metaColors.text
+                      : "text-red-600"
+                    : isLlamaGuard && metaColors
+                    ? metaColors.text
+                    : "text-green-600"
+                )}
+              >
+                {layer.result.flagged ? "Flagged" : "Safe"}
+              </span>
+              {layer.result.flagged && (
+                <>
+                  <Badge
+                    variant="destructive"
+                    className={cn(
+                      "text-xs",
+                      isLlamaGuard
+                        ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+                        : ""
+                    )}
+                  >
+                    {layer.result.category}
+                  </Badge>
+                  <div className="flex items-center space-x-1 ml-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleAccept(layer.key)}
+                      className="h-6 px-2 text-xs bg-green-50 hover:bg-green-100 text-green-700 border-green-200 dark:bg-green-950 dark:hover:bg-green-900 dark:text-green-300 dark:border-green-800"
+                    >
+                      <Check className="h-3 w-3 mr-1" />
+                      Accept
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleReject(layer.key)}
+                      className="h-6 px-2 text-xs bg-red-50 hover:bg-red-100 text-red-700 border-red-200 dark:bg-red-950 dark:hover:bg-red-900 dark:text-red-300 dark:border-red-800"
+                    >
+                      <X className="h-3 w-3 mr-1" />
+                      Reject
+                    </Button>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
 
       {/* Show flagged reasons */}
       {layers.some((layer) => layer.result.flagged) && (
