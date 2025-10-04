@@ -11,7 +11,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ExecutionStatus, RiskLevel, Execution, Agent } from "@/types";
+import {
+  ExecutionStatus,
+  RiskLevel,
+  Execution,
+  Agent,
+  TraceStatus,
+} from "@/types";
 import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { ExecutionList } from "./execution-list";
@@ -20,6 +26,13 @@ import { AgentTimeline } from "../ui/agent-timeline";
 import { TraceList } from "./trace-list";
 import { TraceDetails } from "./trace-details";
 import { useExplorerStore } from "@/store";
+import {
+  agentTypes,
+  mockTraceList,
+  riskLevelOptions,
+  statusOptions,
+  timeRangeOptions,
+} from "@/data/mock-data";
 
 /**
  * Filter header component with search and filter controls
