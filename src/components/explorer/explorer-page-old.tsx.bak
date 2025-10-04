@@ -196,9 +196,7 @@ export function ExplorerPage() {
           </div>
           <div className="flex-1 overflow-hidden">
             {/* <TraceList /> */}
-            <div className="p-4 text-muted-foreground">
-              TraceList component placeholder
-            </div>
+            <div className="p-4 text-muted-foreground">TraceList component placeholder</div>
           </div>
         </div>
 
@@ -214,9 +212,7 @@ export function ExplorerPage() {
           </div>
           <div className="flex-1 overflow-hidden">
             {/* <TraceDetails /> */}
-            <div className="p-4 text-muted-foreground">
-              TraceDetails component placeholder
-            </div>
+            <div className="p-4 text-muted-foreground">TraceDetails component placeholder</div>
           </div>
         </div>
       </div>

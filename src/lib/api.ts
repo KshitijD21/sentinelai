@@ -5,7 +5,9 @@ import {
   SecurityAlert,
   FilterOptions,
   ApiResponse,
-  Execution
+  Execution,
+  Case,
+  AlertOperationResponse
 } from '@/types';
 import {
   mockTraceList,
@@ -58,7 +60,7 @@ async function apiRequest<T>(
     console.error(`❌ API Error for ${endpoint}:`, error);
 
     // Fallback to mock data in case of network error
-    let mockData: any;
+    let mockData: unknown;
 
     switch (endpoint) {
       case '/api/executions':
@@ -92,7 +94,7 @@ async function apiRequest<T>(
     console.warn(`Using mock data for ${endpoint} due to API error:`, error);
 
     return {
-      data: mockData,
+      data: mockData as T,
       error: error instanceof Error ? error.message : 'Unknown error',
       success: mockData !== null, // Success if we have mock data
       status: mockData !== null ? 200 : 500
@@ -160,10 +162,10 @@ export const tracesApi = {
    * @param traceId - Trace to create case for
    * @returns Promise with case details
    */
-  createCase: async (traceId: string): Promise<ApiResponse<any>> => {
+  createCase: async (traceId: string): Promise<ApiResponse<Case>> => {
     console.log('📝 Creating case for trace:', traceId);
     // TODO: Implement actual case creation
-    return apiRequest<any>(`/traces/${traceId}/case`, {
+    return apiRequest<Case>(`/traces/${traceId}/case`, {
       method: 'POST'
     });
   }
@@ -231,10 +233,10 @@ export const alertsApi = {
    * @param alertIds - Array of alert IDs to acknowledge
    * @returns Promise with operation result
    */
-  acknowledgeAlerts: async (alertIds: string[]): Promise<ApiResponse<any>> => {
+  acknowledgeAlerts: async (alertIds: string[]): Promise<ApiResponse<AlertOperationResponse>> => {
     console.log('✅ Acknowledging alerts:', alertIds);
     // TODO: Implement actual acknowledgment
-    return apiRequest<any>('/alerts/acknowledge', {
+    return apiRequest<AlertOperationResponse>('/alerts/acknowledge', {
       method: 'POST',
       body: JSON.stringify({ alertIds })
     });
@@ -245,10 +247,10 @@ export const alertsApi = {
    * @param alertIds - Array of alert IDs to resolve
    * @returns Promise with operation result
    */
-  resolveAlerts: async (alertIds: string[]): Promise<ApiResponse<any>> => {
+  resolveAlerts: async (alertIds: string[]): Promise<ApiResponse<AlertOperationResponse>> => {
     console.log('✅ Resolving alerts:', alertIds);
     // TODO: Implement actual resolution
-    return apiRequest<any>('/alerts/resolve', {
+    return apiRequest<AlertOperationResponse>('/alerts/resolve', {
       method: 'POST',
       body: JSON.stringify({ alertIds })
     });
@@ -260,10 +262,10 @@ export const alertsApi = {
    * @param assignee - User to assign alerts to
    * @returns Promise with operation result
    */
-  assignAlerts: async (alertIds: string[], assignee: string): Promise<ApiResponse<any>> => {
+  assignAlerts: async (alertIds: string[], assignee: string): Promise<ApiResponse<AlertOperationResponse>> => {
     console.log('👤 Assigning alerts to:', assignee, alertIds);
     // TODO: Implement actual assignment
-    return apiRequest<any>('/alerts/assign', {
+    return apiRequest<AlertOperationResponse>('/alerts/assign', {
       method: 'POST',
       body: JSON.stringify({ alertIds, assignee })
     });

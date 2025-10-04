@@ -267,7 +267,7 @@ export interface Agent {
   /** Task description */
   task: string;
   /** Agent output data */
-  output: Record<string, any>;
+  output: Record<string, unknown>;
   /** Execution timestamp */
   timestamp: string;
   /** Security check results for this agent */
@@ -305,7 +305,34 @@ export interface Execution {
 }
 
 /**
- * API response wrapper for consistent error handling
+ * Case creation response
+ */
+export interface Case {
+  /** Case ID */
+  id: string;
+  /** Trace ID this case is associated with */
+  traceId: string;
+  /** Case status */
+  status: string;
+  /** Created timestamp */
+  createdAt: string;
+}
+
+/**
+ * Alert operation response
+ */
+export interface AlertOperationResponse {
+  /** Operation success status */
+  success: boolean;
+  /** Number of affected alerts */
+  affected: number;
+  /** Operation message */
+  message: string;
+}
+
+/**
+ * Generic API response wrapper
+ * Provides consistent interface for all API responses
  */
 export interface ApiResponse<T> {
   /** Response data */

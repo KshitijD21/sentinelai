@@ -231,7 +231,8 @@ export function ExecutionDetail({ executionId }: ExecutionDetailProps) {
             Execution Not Found
           </h2>
           <p className="text-muted-foreground mb-4">
-            The execution with ID "{executionId}" could not be found.
+            The execution with ID &ldquo;{executionId}&rdquo; could not be
+            found.
           </p>
           <Button variant="outline" onClick={handleBack}>
             <ArrowLeft className="h-4 w-4 mr-2" />
