@@ -187,7 +187,7 @@ export interface FilterOptions {
 }
 
 /**
- * Dashboard KPI metrics
+ * Dashboard KPI metrics (legacy - keeping for compatibility)
  */
 export interface DashboardMetrics {
   /** Total number of traces processed */
@@ -200,6 +200,34 @@ export interface DashboardMetrics {
   avg_processing_time: number;
   /** System uptime percentage */
   system_uptime: number;
+}
+
+/**
+ * Dashboard statistics from Flask API
+ */
+export interface DashboardStats {
+  /** Total number of executions */
+  total_executions: number;
+  /** Number of blocked executions */
+  blocked: number;
+  /** Number of allowed executions */
+  allowed: number;
+  /** Number of critical risk executions */
+  critical: number;
+  /** Distribution of executions by risk level */
+  risk_distribution: {
+    LOW: number;
+    MEDIUM: number;
+    HIGH: number;
+    CRITICAL: number;
+  };
+  /** Security layer effectiveness statistics */
+  layer_effectiveness: {
+    L1: number;
+    L2: number;
+    L3: number;
+    LlamaGuard: number;
+  };
 }
 
 /**

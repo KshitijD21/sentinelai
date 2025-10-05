@@ -2,6 +2,7 @@ import {
   TraceListItem,
   TraceDetails,
   DashboardMetrics,
+  DashboardStats,
   SecurityAlert,
   FilterOptions,
   ApiResponse,
@@ -13,6 +14,7 @@ import {
   mockTraceList,
   mockTraceDetails,
   mockDashboardMetrics,
+  mockDashboardStats,
   mockSecurityAlerts,
   mockExecutions
 } from '@/data/mock-data';
@@ -59,23 +61,26 @@ async function apiRequest<T>(
   } catch (error) {
     console.error(`❌ API Error for ${endpoint}:`, error);
 
-    // Fallback to mock data in case of network error
-    let mockData: unknown;
+    // Fallback to mock data only for specific endpoints in development
+    let mockData: unknown = null;
 
+    // Only provide mock data fallback for core endpoints during development
     switch (endpoint) {
       case '/api/executions':
         mockData = mockExecutions;
-        break;
-      case '/api/dashboard/stats':
-        mockData = mockDashboardMetrics;
+        console.warn(`⚠️  Using mock executions data for ${endpoint} due to API error:`, error);
         break;
       case '/alerts':
         mockData = mockSecurityAlerts;
+        console.warn(`⚠️  Using mock alerts data for ${endpoint} due to API error:`, error);
         break;
       default:
         if (endpoint.startsWith('/api/executions/')) {
           const executionId = endpoint.split('/')[3];
           mockData = mockExecutions.find(exec => exec.execution_id === executionId) || null;
+          if (mockData) {
+            console.warn(`⚠️  Using mock execution data for ${endpoint} due to API error:`, error);
+          }
         } else if (endpoint.includes('/search?q=')) {
           const query = endpoint.split('q=')[1]?.toLowerCase() || '';
           mockData = mockExecutions.filter(exec =>
@@ -85,13 +90,10 @@ async function apiRequest<T>(
               agent.task.toLowerCase().includes(decodeURIComponent(query))
             )
           );
-        } else {
-          mockData = null;
+          console.warn(`⚠️  Using mock search results for ${endpoint} due to API error:`, error);
         }
+        break;
     }
-
-    // Return mock data as successful response, but include warning
-    console.warn(`Using mock data for ${endpoint} due to API error:`, error);
 
     return {
       data: mockData as T,
@@ -182,6 +184,76 @@ export const dashboardApi = {
   getMetrics: async (): Promise<ApiResponse<DashboardMetrics>> => {
     console.log('📊 Fetching dashboard metrics');
     return apiRequest<DashboardMetrics>('/dashboard/metrics');
+  },
+
+  /**
+   * Get dashboard statistics calculated from executions data
+   * @returns Promise with dashboard statistics
+   */
+  getStats: async (): Promise<ApiResponse<DashboardStats>> => {
+    console.log('📊 Fetching dashboard stats from executions data');
+    try {
+      // Fetch all executions data
+      const executionsResult = await apiRequest<Execution[]>('/api/executions');
+
+      if (!executionsResult.success || !executionsResult.data) {
+        throw new Error('Failed to fetch executions data');
+      }
+
+      const executions = executionsResult.data;
+
+      // Calculate statistics from executions
+      const totalExecutions = executions.length;
+      const blockedCount = executions.filter(exec => exec.overall_action === 'blocked').length;
+      const allowedCount = executions.filter(exec => exec.overall_action === 'allowed').length;
+      const criticalCount = executions.filter(exec => exec.overall_risk === 'CRITICAL').length;
+
+      // Calculate risk distribution
+      const riskDistribution = {
+        LOW: executions.filter(exec => exec.overall_risk === 'LOW').length,
+        MEDIUM: executions.filter(exec => exec.overall_risk === 'MEDIUM').length,
+        HIGH: executions.filter(exec => exec.overall_risk === 'HIGH').length,
+        CRITICAL: criticalCount
+      };
+
+      // Calculate layer effectiveness (count of blocks by each layer)
+      const blockedExecutions = executions.filter(exec => exec.overall_action === 'blocked');
+      const layerEffectiveness = {
+        L1: blockedExecutions.filter(exec => exec.blocked_by === 'L1').length,
+        L2: blockedExecutions.filter(exec => exec.blocked_by === 'L2').length,
+        L3: blockedExecutions.filter(exec => exec.blocked_by === 'L3').length,
+        LlamaGuard: blockedExecutions.filter(exec => exec.blocked_by === 'llama_guard').length
+      };
+
+      const dashboardStats: DashboardStats = {
+        total_executions: totalExecutions,
+        blocked: blockedCount,
+        allowed: allowedCount,
+        critical: criticalCount,
+        risk_distribution: riskDistribution,
+        layer_effectiveness: layerEffectiveness
+      };
+
+      console.log('📊 Calculated dashboard stats:', dashboardStats);
+
+      return {
+        data: dashboardStats,
+        success: true,
+        status: 200
+      };
+
+    } catch (error) {
+      console.error('Error calculating dashboard stats:', error);
+
+      // Fallback to mock data with warning
+      console.warn('Using mock data for dashboard stats due to error:', error);
+      return {
+        data: mockDashboardStats,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        success: false,
+        status: 500
+      };
+    }
   },
 
   /**
@@ -411,11 +483,13 @@ export const executionsApi = {
   },
 
   /**
-   * Get dashboard statistics
+   * Get dashboard statistics (deprecated - use dashboardApi.getStats instead)
    * @returns Promise with dashboard stats
+   * @deprecated Use dashboardApi.getStats for real-time calculated stats
    */
   getDashboardStats: async (): Promise<ApiResponse<DashboardMetrics>> => {
-    console.log('📊 Fetching dashboard stats');
+    console.log('📊 Fetching dashboard stats (deprecated method)');
+    console.warn('⚠️  This method is deprecated. Use dashboardApi.getStats for real-time calculated statistics.');
     return apiRequest<DashboardMetrics>('/api/dashboard/stats');
   }
 };
