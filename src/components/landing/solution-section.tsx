@@ -34,7 +34,6 @@ export function SolutionSection() {
       ],
       visual: "regex",
       color: "from-gray-800 to-gray-900",
-      bgColor: "from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900",
     },
     {
       id: 2,
@@ -52,7 +51,6 @@ export function SolutionSection() {
       ],
       visual: "ai",
       color: "from-gray-800 to-gray-900",
-      bgColor: "from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900",
     },
     {
       id: 3,
@@ -70,7 +68,6 @@ export function SolutionSection() {
       ],
       visual: "code",
       color: "from-gray-800 to-gray-900",
-      bgColor: "from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900",
     },
     {
       id: 4,
@@ -88,7 +85,6 @@ export function SolutionSection() {
       ],
       visual: "network",
       color: "from-gray-800 to-gray-900",
-      bgColor: "from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900",
     },
   ];
 
@@ -175,7 +171,7 @@ export function SolutionSection() {
   };
 
   return (
-    <section className="py-20 bg-gray-50 dark:bg-gray-800">
+    <section className="py-20 bg-black">
       <div className="container mx-auto px-4">
         {/* Header */}
         <motion.div
@@ -185,7 +181,7 @@ export function SolutionSection() {
           viewport={{ once: true }}
           transition={{ duration: 0.8 }}
         >
-          <Badge className="mb-4 bg-gradient-to-r from-purple-100 to-blue-100 dark:from-purple-900 dark:to-blue-900 text-purple-700 dark:text-purple-300">
+          <Badge className="mb-4 bg-gradient-to-r from-purple-900/50 to-blue-900/50 text-purple-300 border border-purple-700/30">
             <Shield className="w-4 h-4 mr-2" />
             Multi-Layer Protection
           </Badge>
@@ -194,7 +190,7 @@ export function SolutionSection() {
               4-Layer Defense System
             </span>
           </h2>
-          <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+          <p className="text-xl text-gray-400 max-w-3xl mx-auto">
             Comprehensive protection at every stage of your AI pipeline
           </p>
         </motion.div>
@@ -210,7 +206,7 @@ export function SolutionSection() {
               transition={{ duration: 0.8, delay: index * 0.2 }}
             >
               <Card
-                className={`p-8 bg-gradient-to-br ${layer.bgColor} border-2 border-transparent hover:border-opacity-50 transition-all duration-300`}
+                className={`p-8 bg-gradient-to-br from-gray-900/80 to-gray-800/60 border-2 border-gray-700/50 hover:border-gray-600/70 transition-all duration-300 backdrop-blur-sm`}
               >
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
                   {/* Content */}
@@ -223,14 +219,16 @@ export function SolutionSection() {
                       </div>
                       <div>
                         <Badge className="mb-2">{layer.tag}</Badge>
-                        <h3 className="text-2xl font-bold">{layer.title}</h3>
-                        <p className="text-muted-foreground font-medium">
+                        <h3 className="text-2xl font-bold text-white">
+                          {layer.title}
+                        </h3>
+                        <p className="text-gray-300 font-medium">
                           {layer.subtitle}
                         </p>
                       </div>
                     </div>
 
-                    <p className="text-muted-foreground mb-6 leading-relaxed">
+                    <p className="text-gray-300 mb-6 leading-relaxed">
                       {layer.description}
                     </p>
 
@@ -241,7 +239,9 @@ export function SolutionSection() {
                           className="flex items-center gap-2"
                         >
                           <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
-                          <span className="text-sm">{feature}</span>
+                          <span className="text-sm text-gray-200">
+                            {feature}
+                          </span>
                         </div>
                       ))}
                     </div>
@@ -278,10 +278,8 @@ export function SolutionSection() {
                   transition={{ duration: 0.5, delay: index * 0.2 + 0.5 }}
                 >
                   <div className="flex flex-col items-center gap-2">
-                    <ArrowDown className="w-8 h-8 text-muted-foreground/50" />
-                    <span className="text-sm text-muted-foreground">
-                      Next Layer
-                    </span>
+                    <ArrowDown className="w-8 h-8 text-gray-500" />
+                    <span className="text-sm text-gray-400">Next Layer</span>
                   </div>
                 </motion.div>
               )}
@@ -302,19 +300,19 @@ export function SolutionSection() {
               <div className="text-3xl font-bold text-green-600 mb-2">
                 99.8%
               </div>
-              <div className="text-muted-foreground">Threat Detection Rate</div>
+              <div className="text-gray-400">Threat Detection Rate</div>
             </div>
             <div className="text-center">
-              <div className="text-3xl font-bold text-blue-600 mb-2">
+              <div className="text-3xl font-bold text-blue-400 mb-2">
                 &lt;50ms
               </div>
-              <div className="text-muted-foreground">Average Response Time</div>
+              <div className="text-gray-400">Average Response Time</div>
             </div>
             <div className="text-center">
-              <div className="text-3xl font-bold text-purple-600 mb-2">
+              <div className="text-3xl font-bold text-purple-400 mb-2">
                 Zero
               </div>
-              <div className="text-muted-foreground">False Positives</div>
+              <div className="text-gray-400">False Positives</div>
             </div>
           </div>
         </motion.div>

@@ -12,6 +12,7 @@ import {
   BarChart3,
   AlertTriangle,
 } from "lucide-react";
+import Link from "next/link";
 
 export function HowItWorksSection() {
   const steps = [
@@ -133,7 +134,7 @@ export function HowItWorksSection() {
   };
 
   return (
-    <section className="py-20 bg-white dark:bg-gray-900">
+    <section className="py-20 bg-black">
       <div className="container mx-auto px-4">
         {/* Header */}
         <motion.div
@@ -149,7 +150,7 @@ export function HowItWorksSection() {
               3 Simple Steps
             </span>
           </h2>
-          <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+          <p className="text-xl text-gray-400 max-w-3xl mx-auto">
             Get enterprise-grade AI security up and running in under 10 minutes
           </p>
         </motion.div>
@@ -183,8 +184,10 @@ export function HowItWorksSection() {
                   </div>
 
                   <div>
-                    <h3 className="text-3xl font-bold mb-4">{step.title}</h3>
-                    <p className="text-xl text-muted-foreground leading-relaxed">
+                    <h3 className="text-3xl font-bold mb-4 text-white">
+                      {step.title}
+                    </h3>
+                    <p className="text-xl text-gray-300 leading-relaxed">
                       {step.description}
                     </p>
                   </div>
@@ -193,13 +196,13 @@ export function HowItWorksSection() {
                   <div className="space-y-3">
                     {step.id === 1 && (
                       <div className="space-y-2">
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <div className="flex items-center gap-2 text-sm text-gray-400">
                           <Code className="w-4 h-4" />
                           <span>
                             Available for Python, Node.js, Java, and more
                           </span>
                         </div>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <div className="flex items-center gap-2 text-sm text-gray-400">
                           <Download className="w-4 h-4" />
                           <span>Zero-config setup with sensible defaults</span>
                         </div>
@@ -208,11 +211,11 @@ export function HowItWorksSection() {
 
                     {step.id === 2 && (
                       <div className="space-y-2">
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <div className="flex items-center gap-2 text-sm text-gray-400">
                           <Settings className="w-4 h-4" />
                           <span>Web dashboard and API configuration</span>
                         </div>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <div className="flex items-center gap-2 text-sm text-gray-400">
                           <Badge className="w-4 h-4" />
                           <span>Pre-built templates for common use cases</span>
                         </div>
@@ -221,11 +224,11 @@ export function HowItWorksSection() {
 
                     {step.id === 3 && (
                       <div className="space-y-2">
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <div className="flex items-center gap-2 text-sm text-gray-400">
                           <BarChart3 className="w-4 h-4" />
                           <span>Real-time dashboards and alerts</span>
                         </div>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <div className="flex items-center gap-2 text-sm text-gray-400">
                           <Shield className="w-4 h-4" />
                           <span>Automatic threat blocking and reporting</span>
                         </div>
@@ -245,7 +248,7 @@ export function HowItWorksSection() {
                     whileHover={{ scale: 1.02 }}
                     transition={{ type: "spring", stiffness: 300 }}
                   >
-                    <Card className="p-6 bg-white dark:bg-slate-800 shadow-xl">
+                    <Card className="p-6 bg-gray-900/80 border-gray-700/50 shadow-xl backdrop-blur-sm">
                       {
                         visualComponents[
                           step.visual as keyof typeof visualComponents
@@ -265,10 +268,10 @@ export function HowItWorksSection() {
                   viewport={{ once: true }}
                   transition={{ duration: 0.5, delay: index * 0.2 + 0.5 }}
                 >
-                  <div className="flex items-center gap-4 text-muted-foreground">
-                    <div className="hidden sm:block w-16 h-px bg-gradient-to-r from-purple-300 to-blue-300"></div>
-                    <ArrowRight className="w-8 h-8 text-purple-500" />
-                    <div className="hidden sm:block w-16 h-px bg-gradient-to-r from-purple-300 to-blue-300"></div>
+                  <div className="flex items-center gap-4 text-gray-400">
+                    <div className="hidden sm:block w-16 h-px bg-gradient-to-r from-purple-400/50 to-blue-400/50"></div>
+                    <ArrowRight className="w-8 h-8 text-purple-400" />
+                    <div className="hidden sm:block w-16 h-px bg-gradient-to-r from-purple-400/50 to-blue-400/50"></div>
                   </div>
                 </motion.div>
               )}
@@ -291,9 +294,11 @@ export function HowItWorksSection() {
               Built with modern tech stack and innovative security layers.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <button className="px-8 py-3 bg-white text-purple-600 font-semibold rounded-lg hover:bg-purple-50 transition-colors">
-                Get Started
-              </button>
+              <Link href="/dashboard">
+                <button className="px-8 py-3 bg-white text-purple-600 font-semibold rounded-lg hover:bg-purple-50 transition-colors">
+                  Get Started
+                </button>
+              </Link>
             </div>
           </div>
         </motion.div>

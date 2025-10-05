@@ -16,7 +16,7 @@ import { HeroSection } from "@/components/landing/hero-section";
  */
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-black">
       <HeroSection />
       <GlobalSecurityMap />
       {/* <ProblemSection /> */}

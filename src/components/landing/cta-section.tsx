@@ -12,6 +12,7 @@ import {
   Phone,
   Zap,
 } from "lucide-react";
+import Link from "next/link";
 
 export function CTASection() {
   const trustSignals = [
@@ -131,13 +132,15 @@ export function CTASection() {
               viewport={{ once: true }}
               transition={{ duration: 0.8, delay: 0.3 }}
             >
-              <Button
-                size="lg"
-                className="bg-white text-purple-600 hover:bg-purple-50 font-semibold px-8 py-4 text-lg shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105"
-              >
-                Start Free 14-Day Trial
-                <ArrowRight className="ml-2 w-5 h-5" />
-              </Button>
+              <Link href="/dashboard">
+                <Button
+                  size="lg"
+                  className="bg-white text-purple-600 hover:bg-purple-50 font-semibold px-8 py-4 text-lg shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105"
+                >
+                  Start Free 14-Day Trial
+                  <ArrowRight className="ml-2 w-5 h-5" />
+                </Button>
+              </Link>
 
               <Button
                 size="lg"

@@ -14,6 +14,7 @@ import {
   Clock,
   Phone,
 } from "lucide-react";
+import Link from "next/link";
 
 export function PricingSection() {
   const plans = [
@@ -220,23 +221,32 @@ export function PricingSection() {
                   </div>
 
                   {/* CTA Button */}
-                  <Button
-                    className={`w-full ${
-                      plan.popular
-                        ? "bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white"
-                        : "variant-outline hover:bg-purple-50 dark:hover:bg-purple-900/20"
-                    } py-3`}
-                    size="lg"
-                  >
-                    {plan.id === "enterprise" ? (
-                      <>
-                        <Phone className="w-4 h-4 mr-2" />
+                  {plan.cta === "Start Free Trial" ? (
+                    <Link href="/dashboard" className="block">
+                      <Button
+                        className={`w-full ${
+                          plan.popular
+                            ? "bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white"
+                            : "variant-outline hover:bg-purple-50 dark:hover:bg-purple-900/20"
+                        } py-3`}
+                        size="lg"
+                      >
                         {plan.cta}
-                      </>
-                    ) : (
-                      plan.cta
-                    )}
-                  </Button>
+                      </Button>
+                    </Link>
+                  ) : (
+                    <Button
+                      className={`w-full ${
+                        plan.popular
+                          ? "bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white"
+                          : "variant-outline hover:bg-purple-50 dark:hover:bg-purple-900/20"
+                      } py-3`}
+                      size="lg"
+                    >
+                      <Phone className="w-4 h-4 mr-2" />
+                      {plan.cta}
+                    </Button>
+                  )}
 
                   {/* Features */}
                   <div className="space-y-4">
