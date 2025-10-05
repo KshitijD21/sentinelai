@@ -7,7 +7,7 @@ import { ActionBadge } from "@/components/ui/execution-badges";
 import { Agent, SecurityResult, Execution } from "@/types";
 import { cn } from "@/lib/utils";
 import { api } from "@/lib/api";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   CheckCircle,
   XCircle,
@@ -20,9 +20,279 @@ import {
   MessageSquare,
   Check,
   X,
-  Loader2,
+  Zap,
+  Cog,
 } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
+
+/**
+ * Props for SecurityOverrideButtons component
+ */
+interface SecurityOverrideButtonsProps {
+  result: SecurityResult;
+  executionId: string;
+  agentName?: string;
+  isPromptSecurity?: boolean;
+  onComplete?: () => void;
+}
+
+/**
+ * Component for general Accept/Reject buttons that handle all flagged layers
+ */
+function SecurityOverrideButtons({
+  result,
+  executionId,
+  agentName,
+  isPromptSecurity = false,
+  onComplete,
+}: SecurityOverrideButtonsProps) {
+  const [isLoading, setIsLoading] = useState(false);
+  const [loadingAction, setLoadingAction] = useState<
+    "accept" | "reject" | null
+  >(null);
+
+  // Helper function to get all flagged layers
+  const getFlaggedLayers = (): Array<"L1" | "L2" | "L3" | "llama_guard"> => {
+    const flagged: Array<"L1" | "L2" | "L3" | "llama_guard"> = [];
+
+    if (result.L1.flagged) flagged.push("L1");
+    if (result.L2.flagged) flagged.push("L2");
+    if (result.L3.flagged) flagged.push("L3");
+    if (result.llama_guard.flagged) flagged.push("llama_guard");
+
+    return flagged;
+  };
+
+  // Check if there are any flagged layers
+  const hasFlaggedLayers = getFlaggedLayers().length > 0;
+
+  // Handle security override for all flagged layers
+  const handleSecurityOverride = async (action: "accept" | "reject") => {
+    setIsLoading(true);
+    setLoadingAction(action);
+
+    try {
+      const flaggedLayers = getFlaggedLayers();
+
+      // Process each flagged layer
+      for (const layer of flaggedLayers) {
+        const overrideData = {
+          layer,
+          agent_name: isPromptSecurity ? "Prompt" : agentName || "Unknown",
+          action,
+          reason: `User ${action}ed all flagged security results${
+            isPromptSecurity ? " for prompt" : ` for agent ${agentName}`
+          }`,
+          user_id: "current-user", // TODO: Replace with actual user ID from auth context
+        };
+
+        const response = await api.executions.submitSecurityOverride(
+          executionId,
+          overrideData
+        );
+
+        if (!response.success) {
+          throw new Error(
+            response.error ||
+              `Failed to ${action} security override for ${layer}`
+          );
+        }
+      }
+
+      console.log(
+        `Successfully ${action}ed security override${
+          isPromptSecurity ? " for prompt" : ` for agent ${agentName}`
+        }`
+      );
+
+      // Show loading screen for 5 seconds then refresh or call callback
+      setTimeout(() => {
+        setIsLoading(false);
+        setLoadingAction(null);
+        if (onComplete) {
+          onComplete();
+        } else {
+          window.location.reload();
+        }
+      }, 5000);
+    } catch (error) {
+      console.error(`Error ${action}ing security override:`, error);
+      setIsLoading(false);
+      setLoadingAction(null);
+      // You could add error handling UI here
+    }
+  };
+
+  // Don't render if no flagged layers
+  if (!hasFlaggedLayers) {
+    return null;
+  }
+
+  return (
+    <>
+      <div className="flex items-center justify-between p-4 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+        <div className="flex items-start space-x-2">
+          <Shield className="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5" />
+          <div>
+            <h4 className="font-medium text-sm text-amber-800 dark:text-amber-200">
+              Security Override Required
+            </h4>
+            <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
+              {isPromptSecurity
+                ? "The prompt has flagged security results that need your review."
+                : `Agent ${agentName} has flagged security results that need your review.`}
+            </p>
+          </div>
+        </div>
+        <div className="flex space-x-2">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => handleSecurityOverride("accept")}
+            disabled={isLoading}
+            className="h-8 px-4 text-xs bg-green-50 hover:bg-green-100 text-green-700 border-green-200 dark:bg-green-950 dark:hover:bg-green-900 dark:text-green-300 dark:border-green-800"
+          >
+            <Check className="h-3 w-3 mr-1" />
+            Accept
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => handleSecurityOverride("reject")}
+            disabled={isLoading}
+            className="h-8 px-4 text-xs bg-red-50 hover:bg-red-100 text-red-700 border-red-200 dark:bg-red-950 dark:hover:bg-red-900 dark:text-red-300 dark:border-red-800"
+          >
+            <X className="h-3 w-3 mr-1" />
+            Reject
+          </Button>
+        </div>
+      </div>
+
+      {/* Loading screen overlay */}
+      {isLoading && loadingAction && (
+        <AgentLoadingScreen
+          agentName={
+            isPromptSecurity ? "Prompt Security" : agentName || "Agent"
+          }
+          action={loadingAction}
+        />
+      )}
+    </>
+  );
+}
+
+/**
+ * Loading screen component for agent security override
+ */
+interface AgentLoadingScreenProps {
+  agentName: string;
+  action: "accept" | "reject";
+}
+
+function AgentLoadingScreen({ agentName, action }: AgentLoadingScreenProps) {
+  const acceptMessages = [
+    `Agent ${agentName} is processing your ${action} request...`,
+    `Analyzing security layers for ${agentName}...`,
+    `Updating security protocols...`,
+    `Agent ${agentName} is running your code securely...`,
+    `Finalizing ${action} action...`,
+  ];
+
+  const rejectMessages = [
+    `Blocking ${agentName} execution...`,
+    `Enforcing security restrictions...`,
+    `Quarantining potentially harmful code...`,
+    `Updating security blacklist...`,
+    `Security override complete - access denied`,
+  ];
+
+  const messages = action === "accept" ? acceptMessages : rejectMessages;
+  const isReject = action === "reject";
+
+  const [currentMessageIndex, setCurrentMessageIndex] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentMessageIndex((prev) => (prev + 1) % messages.length);
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [messages.length]);
+
+  return (
+    <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
+      <Card className="w-96 p-8">
+        <CardContent className="text-center space-y-6">
+          <div className="relative">
+            <div className="w-20 h-20 mx-auto relative">
+              <div
+                className={cn(
+                  "absolute inset-0 border-4 rounded-full",
+                  isReject ? "border-red-200" : "border-blue-200"
+                )}
+              ></div>
+              <div
+                className={cn(
+                  "absolute inset-0 border-4 rounded-full animate-spin border-t-transparent",
+                  isReject ? "border-red-600" : "border-blue-600"
+                )}
+              ></div>
+              <div className="absolute inset-0 flex items-center justify-center">
+                {isReject ? (
+                  <Shield className={cn("w-8 h-8", "text-red-600")} />
+                ) : (
+                  <Bot className={cn("w-8 h-8", "text-blue-600")} />
+                )}
+              </div>
+            </div>
+            {isReject ? (
+              <XCircle className="w-6 h-6 text-red-500 absolute -top-2 -right-2 animate-pulse" />
+            ) : (
+              <Zap className="w-6 h-6 text-yellow-500 absolute -top-2 -right-2 animate-pulse" />
+            )}
+            <Cog className="w-4 h-4 text-gray-400 absolute -bottom-1 -left-1 animate-spin" />
+          </div>
+
+          <div className="space-y-2">
+            <h3
+              className={cn(
+                "text-lg font-semibold",
+                isReject ? "text-red-600 dark:text-red-400" : "text-foreground"
+              )}
+            >
+              {isReject
+                ? "Blocking Security Threat"
+                : "Processing Security Override"}
+            </h3>
+            <p className="text-sm text-muted-foreground min-h-[40px] flex items-center justify-center">
+              {messages[currentMessageIndex]}
+            </p>
+          </div>
+
+          <div className="flex items-center justify-center space-x-2">
+            <div className="flex space-x-1">
+              {[0, 1, 2].map((i) => (
+                <div
+                  key={i}
+                  className={`w-2 h-2 rounded-full ${
+                    i === currentMessageIndex % 3
+                      ? isReject
+                        ? "bg-red-600"
+                        : "bg-blue-600"
+                      : "bg-gray-300"
+                  }`}
+                  style={{
+                    animation: `pulse 1.5s ease-in-out infinite ${i * 0.2}s`,
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
 
 /**
  * Props for SecurityResultDisplay component
@@ -30,9 +300,6 @@ import { formatDistanceToNow, format } from "date-fns";
 interface SecurityResultDisplayProps {
   result: SecurityResult;
   className?: string;
-  executionId?: string;
-  agentName?: string;
-  isPromptSecurity?: boolean;
 }
 
 /**
@@ -41,9 +308,6 @@ interface SecurityResultDisplayProps {
 function SecurityResultDisplay({
   result,
   className,
-  executionId,
-  agentName,
-  isPromptSecurity = false,
 }: SecurityResultDisplayProps) {
   const layers = [
     { key: "L1", label: "L1 Firewall", result: result.L1 },
@@ -51,77 +315,6 @@ function SecurityResultDisplay({
     { key: "L2", label: "L2 Guardrails", result: result.L2 },
     { key: "L3", label: "L3 Compliance", result: result.L3 },
   ];
-
-  const [loadingStates, setLoadingStates] = useState<Record<string, boolean>>(
-    {}
-  );
-  const [successStates, setSuccessStates] = useState<Record<string, boolean>>(
-    {}
-  );
-  const [errorStates, setErrorStates] = useState<Record<string, string>>({});
-
-  const handleSecurityOverride = async (
-    layerKey: string,
-    action: "accept" | "reject"
-  ) => {
-    if (!executionId) {
-      console.error("No execution ID available for security override");
-      return;
-    }
-
-    const stateKey = `${layerKey}-${action}`;
-    setLoadingStates((prev) => ({ ...prev, [stateKey]: true }));
-    setErrorStates((prev) => ({ ...prev, [stateKey]: "" }));
-
-    try {
-      const overrideData = {
-        layer: layerKey as "L1" | "L2" | "L3" | "llama_guard",
-        agent_name: isPromptSecurity ? "Prompt" : agentName || "Unknown",
-        action,
-        reason: `User ${action}ed the flagged security result for ${layerKey}`,
-        user_id: "current-user", // TODO: Replace with actual user ID from auth context
-      };
-
-      const response = await api.executions.submitSecurityOverride(
-        executionId,
-        overrideData
-      );
-
-      if (response.success) {
-        setSuccessStates((prev) => ({ ...prev, [stateKey]: true }));
-        console.log(
-          `Successfully ${action}ed ${layerKey} security override:`,
-          response.data
-        );
-
-        // Reset success state after 3 seconds
-        setTimeout(() => {
-          setSuccessStates((prev) => ({ ...prev, [stateKey]: false }));
-        }, 3000);
-      } else {
-        throw new Error(
-          response.error || `Failed to ${action} security override`
-        );
-      }
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : `Failed to ${action} security override`;
-      setErrorStates((prev) => ({ ...prev, [stateKey]: errorMessage }));
-      console.error(`Error ${action}ing security override:`, error);
-    } finally {
-      setLoadingStates((prev) => ({ ...prev, [stateKey]: false }));
-    }
-  };
-
-  const handleAccept = (layerKey: string) => {
-    handleSecurityOverride(layerKey, "accept");
-  };
-
-  const handleReject = (layerKey: string) => {
-    handleSecurityOverride(layerKey, "reject");
-  };
 
   const getLlamaGuardColors = () => {
     return {
@@ -192,81 +385,17 @@ function SecurityResultDisplay({
                 {layer.result.flagged ? "Flagged" : "Safe"}
               </span>
               {layer.result.flagged && (
-                <>
-                  <Badge
-                    variant="destructive"
-                    className={cn(
-                      "text-xs",
-                      isLlamaGuard
-                        ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
-                        : ""
-                    )}
-                  >
-                    {layer.result.category}
-                  </Badge>
-                  <div className="flex items-center space-x-1 ml-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleAccept(layer.key)}
-                      disabled={
-                        loadingStates[`${layer.key}-accept`] ||
-                        loadingStates[`${layer.key}-reject`]
-                      }
-                      className={cn(
-                        "h-6 px-2 text-xs",
-                        successStates[`${layer.key}-accept`]
-                          ? "bg-green-200 text-green-800 border-green-300 dark:bg-green-800 dark:text-green-200"
-                          : "bg-green-50 hover:bg-green-100 text-green-700 border-green-200 dark:bg-green-950 dark:hover:bg-green-900 dark:text-green-300 dark:border-green-800"
-                      )}
-                    >
-                      {loadingStates[`${layer.key}-accept`] ? (
-                        <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                      ) : successStates[`${layer.key}-accept`] ? (
-                        <CheckCircle className="h-3 w-3 mr-1" />
-                      ) : (
-                        <Check className="h-3 w-3 mr-1" />
-                      )}
-                      {successStates[`${layer.key}-accept`]
-                        ? "Accepted"
-                        : "Accept"}
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleReject(layer.key)}
-                      disabled={
-                        loadingStates[`${layer.key}-accept`] ||
-                        loadingStates[`${layer.key}-reject`]
-                      }
-                      className={cn(
-                        "h-6 px-2 text-xs",
-                        successStates[`${layer.key}-reject`]
-                          ? "bg-red-200 text-red-800 border-red-300 dark:bg-red-800 dark:text-red-200"
-                          : "bg-red-50 hover:bg-red-100 text-red-700 border-red-200 dark:bg-red-950 dark:hover:bg-red-900 dark:text-red-300 dark:border-red-800"
-                      )}
-                    >
-                      {loadingStates[`${layer.key}-reject`] ? (
-                        <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                      ) : successStates[`${layer.key}-reject`] ? (
-                        <XCircle className="h-3 w-3 mr-1" />
-                      ) : (
-                        <X className="h-3 w-3 mr-1" />
-                      )}
-                      {successStates[`${layer.key}-reject`]
-                        ? "Rejected"
-                        : "Reject"}
-                    </Button>
-                  </div>
-                  {/* Error feedback */}
-                  {(errorStates[`${layer.key}-accept`] ||
-                    errorStates[`${layer.key}-reject`]) && (
-                    <div className="mt-2 text-xs text-red-600 dark:text-red-400">
-                      {errorStates[`${layer.key}-accept`] ||
-                        errorStates[`${layer.key}-reject`]}
-                    </div>
+                <Badge
+                  variant="destructive"
+                  className={cn(
+                    "text-xs",
+                    isLlamaGuard
+                      ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+                      : ""
                   )}
-                </>
+                >
+                  {layer.result.category}
+                </Badge>
               )}
             </div>
           </div>
@@ -319,6 +448,18 @@ export function AgentDetails({
   selectedAgent,
   className,
 }: AgentDetailsProps) {
+  // Helper function to check if agent has flagged security results
+  const hasSecurityFlags = (agent: Agent | null) => {
+    if (!agent) return false;
+    const result = agent.sentinel_result;
+    return (
+      result.L1.flagged ||
+      result.L2.flagged ||
+      result.L3.flagged ||
+      result.llama_guard.flagged
+    );
+  };
+
   const getAgentIcon = (agentName: string) => {
     if (agentName.toLowerCase().includes("planner"))
       return <Brain className="h-5 w-5" />;
@@ -378,11 +519,24 @@ export function AgentDetails({
             </div>
 
             {/* Prompt Security Summary */}
-            <div>
-              <h4 className="font-medium text-sm text-muted-foreground mb-3">
-                Prompt Security Check
-              </h4>
-              <SecurityResultDisplay
+            <div className="space-y-4">
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="font-medium text-sm text-muted-foreground">
+                  Prompt Security Analysis
+                </h4>
+                {/* Check if prompt has any flagged results */}
+                {(execution.prompt_security.L1.flagged ||
+                  execution.prompt_security.L2.flagged ||
+                  execution.prompt_security.L3.flagged ||
+                  execution.prompt_security.llama_guard.flagged) && (
+                  <Badge variant="destructive" className="text-xs">
+                    Security Review Required
+                  </Badge>
+                )}
+              </div>
+              <SecurityResultDisplay result={execution.prompt_security} />
+              {/* General security override buttons for prompt */}
+              <SecurityOverrideButtons
                 result={execution.prompt_security}
                 executionId={execution.execution_id}
                 isPromptSecurity={true}
@@ -446,13 +600,22 @@ export function AgentDetails({
             </div>
 
             {/* Security results */}
-            <div>
-              <h4 className="font-medium text-sm text-muted-foreground mb-3">
-                Security Analysis
-              </h4>
-              <SecurityResultDisplay
+            <div className="space-y-4">
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="font-medium text-sm text-muted-foreground">
+                  Agent Security Analysis
+                </h4>
+                {hasSecurityFlags(selectedAgent) && (
+                  <Badge variant="destructive" className="text-xs">
+                    Security Review Required
+                  </Badge>
+                )}
+              </div>
+              <SecurityResultDisplay result={selectedAgent.sentinel_result} />
+              {/* General security override buttons for agent */}
+              <SecurityOverrideButtons
                 result={selectedAgent.sentinel_result}
-                executionId={execution?.execution_id}
+                executionId={execution?.execution_id || ""}
                 agentName={selectedAgent.agent_name}
               />
             </div>
