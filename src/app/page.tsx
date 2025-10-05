@@ -1,13 +1,31 @@
-import { AppLayout } from "@/components/app-layout";
-import DashboardPage from "@/components/dashboard";
+"use client";
+
+import { motion } from "framer-motion";
+import { ProblemSection } from "@/components/landing/problem-section";
+import { SolutionSection } from "@/components/landing/solution-section";
+import { FeaturesSection } from "@/components/landing/features-section";
+import { HowItWorksSection } from "@/components/landing/how-it-works-section";
+
+import { CTASection } from "@/components/landing/cta-section";
+import { Footer } from "@/components/landing/footer";
+import { GlobalSecurityMap } from "@/components/landing/global-security-map";
+import { HeroSection } from "@/components/landing/hero-section";
 
 /**
- * Home page component - displays the SentinelAI dashboard
+ * Landing page component - SentinelAI marketing website
  */
-export default function Home() {
+export default function LandingPage() {
   return (
-    <AppLayout>
-      <DashboardPage />
-    </AppLayout>
+    <div className="min-h-screen bg-black">
+      <HeroSection />
+      <GlobalSecurityMap />
+      {/* <ProblemSection /> */}
+      <SolutionSection />
+      {/* <FeaturesSection /> */}
+      <HowItWorksSection />
+
+      {/* <CTASection /> */}
+      {/* <Footer /> */}
+    </div>
   );
 }

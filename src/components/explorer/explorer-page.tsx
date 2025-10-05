@@ -279,7 +279,7 @@ export function ExplorerPage() {
   // Handle execution selection
   const handleExecutionSelect = (executionId: string) => {
     setSelectedExecutionId(executionId);
-    setSelectedAgent(null); // Reset agent selection when changing execution
+    setSelectedAgent(null); // Reset to Prompt Security when changing execution
   };
 
   // Handle agent selection from timeline
@@ -361,8 +361,8 @@ export function ExplorerPage() {
                   <span>AGENTS</span>
                 </h2>
                 <p className="text-sm text-muted-foreground">
-                  {visibleAgents.length} of {selectedExecution.agents.length}{" "}
-                  agents visible
+                  {visibleAgents.length + 1} of{" "}
+                  {selectedExecution.agents.length + 1} steps visible
                   {visibleAgents.length < selectedExecution.agents.length && (
                     <span className="text-red-600 ml-1">
                       (execution blocked)
@@ -372,6 +372,37 @@ export function ExplorerPage() {
               </div>
               <div className="flex-1 overflow-auto p-4">
                 <div className="space-y-3">
+                  {/* Prompt Security Step - Always shown first */}
+                  <div
+                    className={cn(
+                      "p-3 rounded-lg border cursor-pointer transition-all",
+                      selectedAgent === null
+                        ? "border-primary bg-primary/5"
+                        : "border-border hover:border-primary/30 hover:bg-muted/50"
+                    )}
+                    onClick={() => setSelectedAgent(null)}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-medium text-sm">
+                        Prompt Security
+                      </span>
+                      <span
+                        className={cn(
+                          "text-xs px-2 py-1 rounded",
+                          selectedExecution.overall_action === "allowed"
+                            ? "bg-green-100 text-green-700"
+                            : "bg-red-100 text-red-700"
+                        )}
+                      >
+                        {selectedExecution.overall_action}
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground truncate">
+                      Initial security analysis of user prompt
+                    </p>
+                  </div>
+
+                  {/* Existing Agents */}
                   {visibleAgents.map((agent, index) => (
                     <div
                       key={`${agent.agent_name}-${index}`}
@@ -424,16 +455,16 @@ export function ExplorerPage() {
           )}
         </div>
 
-        {/* Right Panel - Agent Details */}
+        {/* Right Panel - Details */}
         <div className="flex-1 flex flex-col">
           <div className="p-4 border-b border-border">
-            <h2 className="text-lg font-semibold">AGENT DETAILS</h2>
+            <h2 className="text-lg font-semibold">DETAILS</h2>
             <p className="text-sm text-muted-foreground">
               {selectedAgent
                 ? `${selectedAgent.agent_name} execution details`
                 : selectedExecution
-                ? "Select an agent to view details"
-                : "Select an execution to view agent details"}
+                ? "Prompt security analysis and execution details"
+                : "Select an execution to view details"}
             </p>
           </div>
           <div className="flex-1 overflow-hidden">

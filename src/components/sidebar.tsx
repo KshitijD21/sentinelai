@@ -24,7 +24,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   {
     title: "Dashboard",
-    href: "/",
+    href: "/dashboard",
     icon: BarChart3,
     description: "Overview and metrics",
   },
@@ -54,7 +54,10 @@ export function Sidebar() {
     <div className="w-64 h-screen bg-sidebar border-r border-sidebar-border flex flex-col">
       {/* Header with SentinelAI Branding */}
       <div className="p-6 border-b border-sidebar-border">
-        <div className="flex items-center space-x-3">
+        <Link
+          href="/"
+          className="flex items-center space-x-3 hover:opacity-80 transition-opacity"
+        >
           <div className="flex-shrink-0">
             <Shield className="h-8 w-8 text-primary" />
           </div>
@@ -64,7 +67,7 @@ export function Sidebar() {
             </h1>
             <p className="text-sm text-muted-foreground">Security Platform</p>
           </div>
-        </div>
+        </Link>
       </div>
 
       {/* Navigation Items */}
@@ -78,7 +81,7 @@ export function Sidebar() {
               key={item.href}
               href={item.href}
               onClick={() => {
-                if (item.href === "/") setCurrentPage("dashboard");
+                if (item.href === "/dashboard") setCurrentPage("dashboard");
                 else if (item.href === "/explorer") setCurrentPage("explorer");
                 else if (item.href === "/alerts") setCurrentPage("alerts");
               }}
