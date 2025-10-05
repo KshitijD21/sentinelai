@@ -84,6 +84,15 @@ interface KPICardsGridProps {
  * Grid of 4 KPI cards showing key dashboard metrics
  */
 export function KPICardsGrid({ stats, loading }: KPICardsGridProps) {
+  // Debug logging to see what data we're receiving
+  console.log("KPICardsGrid Debug:", {
+    stats,
+    loading,
+    statsType: typeof stats,
+    statsKeys: stats ? Object.keys(stats) : null,
+    statsValues: stats ? Object.values(stats) : null,
+  });
+
   if (loading) {
     return (
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -106,9 +115,19 @@ export function KPICardsGrid({ stats, loading }: KPICardsGridProps) {
   if (!stats) {
     return (
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <div className="text-center text-muted-foreground">
-          Unable to load dashboard statistics
-        </div>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm font-medium">
+              Connection Status
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-sm text-muted-foreground">
+              <p>⚠️ Unable to connect to SentinelAI API</p>
+              <p>Please check if the backend is running on port 9000</p>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -124,39 +143,54 @@ export function KPICardsGrid({ stats, loading }: KPICardsGridProps) {
       ? ((allowed / totalExecutions) * 100).toFixed(1)
       : "0.0";
 
+  // Calculate percentage change trends (mock values for now)
+  const totalTrend = totalExecutions > 0 ? "+12%" : "0%";
+  const successTrend = parseFloat(successRate) > 90 ? "+2.1%" : "-1.2%";
+  const blockedTrend = blocked < totalExecutions * 0.1 ? "-15%" : "+8%";
+  const criticalTrend = critical < totalExecutions * 0.05 ? "-25%" : "+10%";
+
   const kpiCards = [
     {
       title: "Total Executions",
       value: totalExecutions.toLocaleString(),
-      description: "today", // You can make this dynamic based on actual data
+      description: `from previous period | Raw: ${totalExecutions}`,
       icon: Activity,
       trend: "up" as const,
-      trendValue: "+12", // You can make this dynamic based on actual data
+      trendValue: totalTrend,
     },
     {
       title: "Success Rate",
       value: `${successRate}%`,
-      description: "",
+      description: `${allowed}/${totalExecutions} allowed`,
       icon: CheckCircle,
-      trend: "up" as const,
-      trendValue: "+2.1%", // You can make this dynamic based on actual data
+      trend: parseFloat(successRate) > 90 ? ("up" as const) : ("down" as const),
+      trendValue: successTrend,
     },
     {
       title: "Blocked Actions",
       value: blocked.toLocaleString(),
-      description: "today",
+      description: `${((blocked / totalExecutions) * 100 || 0).toFixed(
+        1
+      )}% of total`,
       icon: Shield,
-      trend: "down" as const,
-      trendValue: "-5", // You can make this dynamic based on actual data
-      variant: "success" as const, // Down trend is good for blocked actions
+      trend:
+        blocked < totalExecutions * 0.1 ? ("down" as const) : ("up" as const),
+      trendValue: blockedTrend,
+      variant:
+        blocked < totalExecutions * 0.1
+          ? ("success" as const)
+          : ("warning" as const),
     },
     {
       title: "Critical Risks",
       value: critical.toLocaleString(),
-      description: "today",
+      description: `${((critical / totalExecutions) * 100 || 0).toFixed(
+        1
+      )}% of total`,
       icon: AlertTriangle,
-      trend: "up" as const,
-      trendValue: "+3", // You can make this dynamic based on actual data
+      trend:
+        critical < totalExecutions * 0.05 ? ("down" as const) : ("up" as const),
+      trendValue: criticalTrend,
       variant: "destructive" as const,
     },
   ];

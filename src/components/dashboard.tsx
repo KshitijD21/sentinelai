@@ -51,6 +51,8 @@ function useDashboardData() {
   const stats = dashboardStatsQuery.data?.data || null;
   const executions = executionsQuery.data?.data || null;
 
+  console.log("Executions:", executions);
+
   console.log("Hook returning:", {
     stats,
     executions,
@@ -119,10 +121,25 @@ export default function DashboardPage() {
       {error && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 dark:bg-yellow-900/10 dark:border-yellow-800">
           <p className="text-sm text-yellow-800 dark:text-yellow-200">
-            ⚠️ Unable to connect to Flask API. Showing mock data instead.
+            ⚠️ Unable to connect to SentinelAI API (localhost:9000). Showing
+            mock data for demonstration purposes.
+          </p>
+          <p className="text-xs text-yellow-700 dark:text-yellow-300 mt-1">
+            To see real data: Start the SentinelAI backend server and ensure it
+            has the endpoint <code>/api/dashboard/stats</code>
           </p>
         </div>
       )}
+
+      {/* Debug Section - Show Raw API Response (uncomment for debugging) */}
+      {/* {stats && (
+        <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-4">
+          <h3 className="text-lg font-semibold mb-2">Raw API Response Debug</h3>
+          <pre className="text-xs overflow-x-auto bg-slate-100 dark:bg-slate-800 p-2 rounded">
+            {JSON.stringify(stats, null, 2)}
+          </pre>
+        </div>
+      )} */}
 
       {/* KPI Cards Grid */}
       <KPICardsGrid stats={stats} loading={isLoading} />
