@@ -249,7 +249,7 @@ export function Footer() {
         </div>
 
         {/* Certifications */}
-        <motion.div
+        {/* <motion.div
           className="py-8 border-t border-slate-800"
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -273,9 +273,9 @@ export function Footer() {
               ))}
             </div>
           </div>
-        </motion.div>
+        </motion.div> */}
 
-        {/* Bottom Bar */}
+        {/* Bottom Bar
         <motion.div
           className="py-6 border-t border-slate-800 flex flex-col md:flex-row justify-between items-center gap-4"
           initial={{ opacity: 0 }}
@@ -297,7 +297,7 @@ export function Footer() {
               <span>10M+ Threats Blocked</span>
             </div>
           </div>
-        </motion.div>
+        </motion.div> */}
       </div>
     </footer>
   );

@@ -284,18 +284,15 @@ export function HowItWorksSection() {
           viewport={{ once: true }}
           transition={{ duration: 0.8 }}
         >
-          <div className="bg-gradient-to-r from-purple-600 to-blue-600 rounded-3xl p-8 text-white">
-            <h3 className="text-2xl font-bold mb-4">Ready to get started?</h3>
+          <div className="bg-purple-600 rounded-3xl p-8 text-white">
+            <h3 className="text-2xl font-bold mb-4">Built for Innovation</h3>
             <p className="text-purple-100 mb-6 max-w-2xl mx-auto">
-              Join thousands of developers already protecting their AI
-              applications with SentinelAI
+              SentinelAI is a prototype showcasing the future of AI security.
+              Built with modern tech stack and innovative security layers.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <button className="px-8 py-3 bg-white text-purple-600 font-semibold rounded-lg hover:bg-purple-50 transition-colors">
-                Start Free Trial
-              </button>
-              <button className="px-8 py-3 border-2 border-white text-white font-semibold rounded-lg hover:bg-white hover:text-purple-600 transition-colors">
-                View Documentation
+                Get Started
               </button>
             </div>
           </div>
