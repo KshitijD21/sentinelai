@@ -205,6 +205,27 @@ export function ExplorerPage() {
     executions.find((exec) => exec.execution_id === selectedExecutionId) ||
     null;
 
+  // Function to get visible agents (only up to first blocked agent)
+  const getVisibleAgents = (agents: Agent[]): Agent[] => {
+    const visibleAgents: Agent[] = [];
+
+    for (const agent of agents) {
+      visibleAgents.push(agent);
+
+      // If this agent is blocked, stop here and don't show further agents
+      if (agent.action === "blocked") {
+        break;
+      }
+    }
+
+    return visibleAgents;
+  };
+
+  // Get visible agents for the selected execution
+  const visibleAgents = selectedExecution
+    ? getVisibleAgents(selectedExecution.agents)
+    : [];
+
   // Fetch executions from API
   const fetchExecutions = async () => {
     try {
@@ -340,12 +361,18 @@ export function ExplorerPage() {
                   <span>AGENTS</span>
                 </h2>
                 <p className="text-sm text-muted-foreground">
-                  {selectedExecution.agents.length} agents in execution
+                  {visibleAgents.length} of {selectedExecution.agents.length}{" "}
+                  agents visible
+                  {visibleAgents.length < selectedExecution.agents.length && (
+                    <span className="text-red-600 ml-1">
+                      (execution blocked)
+                    </span>
+                  )}
                 </p>
               </div>
               <div className="flex-1 overflow-auto p-4">
                 <div className="space-y-3">
-                  {selectedExecution.agents.map((agent, index) => (
+                  {visibleAgents.map((agent, index) => (
                     <div
                       key={`${agent.agent_name}-${index}`}
                       className={cn(
@@ -376,6 +403,21 @@ export function ExplorerPage() {
                       </p>
                     </div>
                   ))}
+
+                  {/* Show blocked indicator if there are hidden agents */}
+                  {visibleAgents.length < selectedExecution.agents.length && (
+                    <div className="p-3 rounded-lg border border-red-200 bg-red-50">
+                      <div className="flex items-center space-x-2">
+                        <div className="h-2 w-2 bg-red-500 rounded-full"></div>
+                        <span className="text-sm text-red-700 font-medium">
+                          Execution blocked -{" "}
+                          {selectedExecution.agents.length -
+                            visibleAgents.length}{" "}
+                          subsequent agents hidden
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
