@@ -22,6 +22,7 @@ import {
   X,
   Zap,
   Cog,
+  Users,
 } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
 
@@ -470,16 +471,19 @@ export function AgentDetails({
     return <Bot className="h-5 w-5" />;
   };
 
-  // Show execution overview when no agent is selected
+  // Show prompt security details when no agent is selected
   if (!selectedAgent && execution) {
     return (
       <div className={cn("p-6 h-full overflow-auto", className)}>
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
-              <MessageSquare className="h-5 w-5" />
-              <span>Execution Overview</span>
+              <Shield className="h-5 w-5" />
+              <span>Prompt Security Analysis</span>
             </CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Security analysis results for the initial user prompt
+            </p>
           </CardHeader>
           <CardContent className="space-y-6">
             {/* Prompt */}
@@ -492,7 +496,28 @@ export function AgentDetails({
               </p>
             </div>
 
-            {/* Execution details */}
+            {/* Overall Status */}
+            <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
+              <div className="flex items-center space-x-3">
+                <div
+                  className={cn(
+                    "h-3 w-3 rounded-full",
+                    execution.overall_action === "allowed"
+                      ? "bg-green-500"
+                      : "bg-red-500"
+                  )}
+                ></div>
+                <span className="font-medium">
+                  Prompt{" "}
+                  {execution.overall_action === "allowed"
+                    ? "Approved"
+                    : "Blocked"}
+                </span>
+              </div>
+              <ActionBadge action={execution.overall_action} />
+            </div>
+
+            {/* Execution Metadata */}
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
                 <span className="text-muted-foreground">Execution ID:</span>
@@ -501,28 +526,37 @@ export function AgentDetails({
                 </p>
               </div>
               <div>
+                <span className="text-muted-foreground">Risk Level:</span>
+                <div className="mt-1">
+                  <Badge
+                    variant={
+                      execution.overall_risk === "HIGH" ||
+                      execution.overall_risk === "CRITICAL"
+                        ? "destructive"
+                        : "secondary"
+                    }
+                  >
+                    {execution.overall_risk}
+                  </Badge>
+                </div>
+              </div>
+              <div>
                 <span className="text-muted-foreground">Created:</span>
                 <p className="mt-1">
                   {format(new Date(execution.created_at), "PPP p")}
                 </p>
               </div>
               <div>
-                <span className="text-muted-foreground">Status:</span>
-                <div className="mt-1">
-                  <ActionBadge action={execution.overall_action} />
-                </div>
-              </div>
-              <div>
-                <span className="text-muted-foreground">Agents:</span>
-                <p className="mt-1">{execution.agents.length} total</p>
+                <span className="text-muted-foreground">Total Agents:</span>
+                <p className="mt-1">{execution.agents.length}</p>
               </div>
             </div>
 
-            {/* Prompt Security Summary */}
+            {/* Security Analysis Results */}
             <div className="space-y-4">
               <div className="flex items-center justify-between mb-3">
                 <h4 className="font-medium text-sm text-muted-foreground">
-                  Prompt Security Analysis
+                  Security Layer Analysis
                 </h4>
                 {/* Check if prompt has any flagged results */}
                 {(execution.prompt_security.L1.flagged ||
@@ -535,7 +569,8 @@ export function AgentDetails({
                 )}
               </div>
               <SecurityResultDisplay result={execution.prompt_security} />
-              {/* General security override buttons for prompt */}
+
+              {/* Security Override Buttons */}
               <SecurityOverrideButtons
                 result={execution.prompt_security}
                 executionId={execution.execution_id}
@@ -543,12 +578,12 @@ export function AgentDetails({
               />
             </div>
 
-            {/* Instructions */}
-            <div className="text-center py-4 text-muted-foreground">
-              <Bot className="h-8 w-8 mx-auto mb-2" />
+            {/* Navigation Hint */}
+            <div className="text-center py-4 text-muted-foreground border-t border-border">
+              <Users className="h-8 w-8 mx-auto mb-2" />
               <p className="text-sm">
-                Select an agent from the list to view detailed execution
-                information
+                Select an agent from the timeline to view individual agent
+                execution details
               </p>
             </div>
           </CardContent>
