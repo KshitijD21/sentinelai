@@ -2,6 +2,7 @@ import {
   TraceListItem,
   TraceDetails,
   DashboardMetrics,
+  DashboardStats,
   SecurityAlert,
   RiskLevel,
   TraceStatus,
@@ -298,6 +299,28 @@ export const mockDashboardMetrics: DashboardMetrics = {
   },
   avg_processing_time: 12.4,
   system_uptime: 99.7
+};
+
+/**
+ * Mock dashboard stats for Flask API format
+ */
+export const mockDashboardStats: DashboardStats = {
+  total_executions: 1247,
+  blocked: 89,
+  allowed: 1158,
+  critical: 47,
+  risk_distribution: {
+    LOW: 623,
+    MEDIUM: 421,
+    HIGH: 156,
+    CRITICAL: 47
+  },
+  layer_effectiveness: {
+    L1: 45,
+    L2: 30,
+    L3: 10,
+    LlamaGuard: 4
+  }
 };
 
 /**

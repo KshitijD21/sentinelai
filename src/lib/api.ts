@@ -2,6 +2,7 @@ import {
   TraceListItem,
   TraceDetails,
   DashboardMetrics,
+  DashboardStats,
   SecurityAlert,
   FilterOptions,
   ApiResponse,
@@ -13,6 +14,7 @@ import {
   mockTraceList,
   mockTraceDetails,
   mockDashboardMetrics,
+  mockDashboardStats,
   mockSecurityAlerts,
   mockExecutions
 } from '@/data/mock-data';
@@ -67,7 +69,7 @@ async function apiRequest<T>(
         mockData = mockExecutions;
         break;
       case '/api/dashboard/stats':
-        mockData = mockDashboardMetrics;
+        mockData = mockDashboardStats;
         break;
       case '/alerts':
         mockData = mockSecurityAlerts;
@@ -182,6 +184,27 @@ export const dashboardApi = {
   getMetrics: async (): Promise<ApiResponse<DashboardMetrics>> => {
     console.log('📊 Fetching dashboard metrics');
     return apiRequest<DashboardMetrics>('/dashboard/metrics');
+  },
+
+  /**
+   * Get dashboard statistics from Flask API
+   * @returns Promise with dashboard statistics
+   */
+  getStats: async (): Promise<ApiResponse<DashboardStats>> => {
+    console.log('📊 Fetching dashboard stats from Flask API');
+    try {
+      const result = await apiRequest<DashboardStats>('/api/dashboard/stats');
+      console.log('Dashboard stats result:', result);
+      return result;
+    } catch (error) {
+      console.error('Error in getStats:', error);
+      // Return mock data as fallback
+      return {
+        data: mockDashboardStats,
+        success: true,
+        status: 200
+      };
+    }
   },
 
   /**
